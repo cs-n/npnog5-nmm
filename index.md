@@ -21,17 +21,17 @@ Track: Network Monitoring, Management and Automation
 Duration: 5 Days
 Date: Dec 8 to 12, 2019
 Location: Kathmandu, Nepal
-Veneu: [venue](#)
+Veneu: [venue]
 Level of Study: Beginner / Intermediate to Advance
 Maximum number of attendees: 36 delegates
 ~~~
 
-* [Detailed Agenda](agenda.html) (includes links to presentations and schedule)
-* [Participants](participants.html)
-* [Instructors and Organizers](instructors.html)
-* [Reference Materials](references.html)
-* [Books](books.html)
-* [Sponsors](sponsors.html)
+* [Detailed Agenda](agenda.md) (includes links to presentations and schedule)
+* [Participants](participants.md)
+* [Instructors and Organizers](instructors.md)
+* [Reference Materials](references.md)
+* [Books](books.md)
+* [Sponsors](sponsors.md)
 * [Group Photo: Photos](#?)
 * [Survey](#?)
 * mailing list: [here](#?)
