@@ -674,7 +674,7 @@ we will update ansible playbook named **_snmp.yml_** to Download mib and update 
 
     - name: Check if mib files exist
       set_fact:
-        mib_file_stat: "{{ mib_file_stat|default({}) | combine({item.item: item.stat.exists}) }}"
+        mib_file_stat: '{{ mib_file_stat|default({}) | combine({item.item: item.stat.exists}) }}'
       with_items: '{{ mib_files.results }}'
       tags: mibs
 
