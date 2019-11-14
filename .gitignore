@@ -1,1 +1,6 @@
 *.html
+.jekyll-cache/
+Gemfile
+Gemfile.lock
+_site/
+
