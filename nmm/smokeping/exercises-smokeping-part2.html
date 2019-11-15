@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>exercises-snmp.md</title>
+<title>exercises-smokeping-part2.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -421,11 +421,11 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
           : 'default'
     });
   </script>
-<h1 id="snmp-installation-and-configuration"><strong>SNMP Installation and Configuration</strong></h1>
+<h1 id="network-management-monitoring---smokeping"><strong>Network Management &amp; Monitoring - Smokeping</strong></h1>
 <h2 id="introduction"><strong>Introduction</strong></h2>
 <h3 id="goals"><strong>Goals</strong></h3>
 <ul>
-<li>Install and configure SNMP</li>
+<li>Configure more Targets and Probes</li>
 </ul>
 <h3 id="notes"><strong>Notes</strong></h3>
 <ul>
@@ -436,632 +436,371 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
 <li>References to &quot;Y&quot; represent your group number.</li>
 </ul>
 <hr>
-<h2 id="installing-client-manager-tools"><strong>Installing client (manager) tools</strong></h2>
-<p>Start by installing the net-snmp tools on your individual host.</p>
-<p><strong>Log in to your shared workstation virtual machine as &quot;vmXgY&quot; user.</strong> (Replace X with vm no and Y with group no)</p>
-<p>Now we create new ansible-playbook file named <strong><em>snmp.yml</em></strong></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+<h2 id="exercise---part-ii"><strong>Exercise - Part II</strong></h2>
+<h3 id="add-new-probes-to-smokeping"><strong>Add new probes to Smokeping</strong></h3>
+<p>The current entry in the Probes file is fine, but if you wish to use additional Smokeping checks you can add them in here and you can specify their default behavior. You can do this, as well, in the Targets file if you wish.</p>
+<p>To add a probe to check for HTTP latency as well as DNS lookup latency, create the <em>Probes</em> file and put the following content in that file:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/smokeping/Probes
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
+<pre class="hljs"><code><div>*** Probes ***
+
++ FPing
+
+binary = /usr/bin/fping
+
++ EchoPingHttp
+
++ EchoPingHttps
+
++ DNS
+binary = /usr/bin/dig
+pings = 5
+step = 180
+lookup = www.workalaya.net
+</div></code></pre>
+<p>The DNS probe will look up the IP address of www.workalaya.net using any other open DNS server (resolver) you specify in the Targets file. You will see this a bit further on in the exercises.</p>
+<p>update ansible playbook named <strong><em>smokeping.yml</em></strong> and run it</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi smokeping.yml
+</div></code></pre>
+<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">smokeping_hosts</span>
 <span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
 <span class="hljs-attr">  tasks:</span>
 <span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
 <span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">smokeping</span> <span class="hljs-string">and</span> <span class="hljs-string">dependencies</span>
 <span class="hljs-attr">      package:</span>
 <span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
 <span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
 <span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">smokeping</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">fping</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-</div></code></pre>
-<p>update inventory/hosts as following</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
-</div></code></pre>
-<pre class="hljs"><code><div>[nagios_hosts]
-vmX-gY.lab.workalaya.net
-
-[snmp_hosts]
-vmX-gY.lab.workalaya.net
-</div></code></pre>
-<p>Now run ansible playbook to install snmp client tools</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Now, in your home directory make a .snmp directory with file snmp.conf inside it, make it readable only by you, and add the credentials to it:</p>
-<p>You will perform this task using ansible.</p>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">set</span> <span class="hljs-string">fping</span> <span class="hljs-string">setuid</span>
 <span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/usr/bin/fping</span>
+<span class="hljs-attr">        owner:</span> <span class="hljs-string">root</span>
+<span class="hljs-attr">        group:</span> <span class="hljs-string">root</span>
+<span class="hljs-attr">        mode:</span> <span class="hljs-number">04755</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">enable</span> <span class="hljs-string">apache</span> <span class="hljs-string">cgi</span>
+<span class="hljs-attr">      apache2_module:</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">cgi</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">apache</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Smokeping</span> <span class="hljs-string">General</span> <span class="hljs-string">config</span>
 <span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-</div></code></pre>
-<p>and create new file named snmp.conf inside file/snmp/</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/snmp
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/snmp/snmp.conf
-</div></code></pre>
-<p>Put the following contents in the file:</p>
-<pre class="hljs"><code><div>defVersion 3
-defSecurityLevel authNoPriv
-defSecurityName admin
-defAuthPassphrase NetManage
-defAuthType SHA
-defPrivType AES
-
-# Default community when using SNMP v2c
-defCommunity NetManage
-</div></code></pre>
-<p>Now run ansible playbook named <strong><em>snmp.yml</em></strong> again should see similar output</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp directory <span class="hljs-keyword">in</span> /home/lab/] *******************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp/snmp.conf] *********************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Creating this configuration file means you won't have to enter your credentials everytime you use one of the SNMP utilities. Otherwise you would have to add all these values on the command line like this:</p>
-<p>now log into your vm and try executing following command</p>
-<p>(this command will not yet work)</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v3 -l authNoPriv -a SHA -u admin -A NetManage vmX-gY
-</div></code></pre>
-<h2 id="configure-snmp-on-your-group-routers-and-switches"><strong>Configure SNMP on Your Group Routers and Switches</strong></h2>
-<p>For this exercise you need to work together as a group. You will be enabling and configuring snmp to run on each of your group network devices. This includes:</p>
-<ul>
-<li>rtr1-gY.lab.workalaya.net</li>
-</ul>
-<p>The commands to enable ssh are the same on each box, so divide the work between your group member:</p>
-<p>Now connect to your campus network devices and on each do:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
-
-username: lab
-password: &lt;CLASS PASSWORD&gt;
-
-rtr1-gY&gt; <span class="hljs-built_in">enable</span>
-Password: &lt;CLASS PASSWORD&gt;
-rtr1-gY<span class="hljs-comment"># configure terminal</span>
-</div></code></pre>
-<p>Now we need to add an Access Control List rule for SNMP access, turn on SNMP, assign a read-only SNMP community string as well as a SNMPv3 group and user and tell the router to maintain SNMP information across reboots. To do this we do:</p>
-<p>(Note that &quot;Y&quot; is equal to your campus number)</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# snmp-server community NetManage ro 99
-rtr1-gY(config)# snmp-server group ReadGroup v3 auth access 99
-rtr1-gY(config)# access-list 99 permit 100.68.Y.1 0.0.0.0
-rtr1-gY(config)# access-list 99 permit 100.68.Y.16 0.0.0.15
-rtr1-gY(config)# access-list 99 permit 100.68.100.0 0.0.0.255
-rtr1-gY(config)# snmp-server user admin ReadGroup v3 auth sha NetManage
-rtr1-gY(config)# snmp-server ifindex persist
-</div></code></pre>
-<p>Now let's exit and save this new configuration to the routers permanent config.</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# exit
-rtr1-gY# write memory
-rtr1-gY# exit
-</div></code></pre>
-<p>If you have questions about what the access-list statement is restricting ask your instructors.</p>
-<h2 id="testing-snmp"><strong>Testing SNMP</strong></h2>
-<p>To check that your SNMP installation works, run the snmpstatus command on each of the following devices from your host:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>Where is each of the following:</p>
-<pre class="hljs"><code><div>Group border router: 100.68.Y.1
-</div></code></pre>
-<p><strong>Note</strong>: that you just used SNMPv3. Not all devices that implement SNMP support v3. Try again, adding &quot;-v2c&quot; as a parameter. Notice that the command automatically uses the community string in the snmp.conf file instead of the v3 user credentials. Try &quot;-v1&quot;. That is try:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v1 &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>What happens if you try using the wrong community string (i.e. change NetManage to something else) using the options &quot;-v2c -c NetWrong&quot;?</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c -c NetWrong &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<h2 id="snmp-walk-and-oids"><strong>SNMP Walk and OIDs</strong></h2>
-<p>Now, you are going to use the <strong><em>snmpwalk</em></strong> command, part of the SNMP toolkit, to list the tables associated with the OIDs listed below, on each piece of equipment you tried above:</p>
-<pre class="hljs"><code><div>.1.3.6.1.2.1.2.2.1.2
-.1.3.6.1.2.1.31.1.1.1.18
-.1.3.6.1.4.1.9.9.13.1
-.1.3.6.1.2.1.25.2.3.1
-.1.3.6.1.2.1.25.4.2.1
-</div></code></pre>
-<p>You will try this with two forms of the <strong><em>snmpwalk</em></strong> command:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c &lt;IP_ADDRESS&gt; &lt;OID&gt;
-</div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c -On &lt;IP_ADDRESS&gt; &lt;OID&gt;
-</div></code></pre>
-<p>... where OID is one of the OIDs listed above: .1.3.6...</p>
-<p>...where IP_ADDRESS can be your group's router...</p>
-<p><strong>Note</strong>: the -On option turns on numerical output, i.e.: no translation of the OID &lt;-&gt; MIB object takes place.</p>
-<p>For these OIDs:</p>
-<ol>
-<li>Do all the devices answer?</li>
-<li>Do you notice anything important about the OID on the output?</li>
-</ol>
-<h2 id="configuration-of-snmpd-on-your-host-vmx-gylabworkalayanet"><strong>Configuration of snmpd on your host (vmX-gY.lab.workalaya.net)</strong></h2>
-<p>For this exercise your group needs to verify that the snmpd service is running and responding to queries for all machines in your group. First enable snmpd on your machine, then test if your machine is responding, then check each machine of your other group members.</p>
-<ul>
-<li>Install the SNMP agent (daemon) on your host</li>
-</ul>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">files/smokeping/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/smokeping/config.d</span>
+<span class="hljs-attr">        backup:</span> <span class="hljs-literal">yes</span>
 <span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">General</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">Alerts</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">Probes</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">base_config</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">smokeping</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd-server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-</div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<ul>
-<li>Configuration</li>
-</ul>
-<p>We will create our own &quot;snmpd.conf&quot; template file and not &quot;snmp.conf&quot; and update ansible playbook named <strong><em>snmp.yml</em></strong> file</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p templates/snmpd
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/snmpd/snmpd.conf
-</div></code></pre>
-<p>Then, copy/paste the following (change vmX-gY to your own host and campus number) and replace &quot;Y&quot; with your campus number:</p>
-<pre class="hljs"><code><div>#  Listen for connections on all interfaces (both IPv4 *and* IPv6)
-agentAddress udp:161,udp6:161
-
-# For SNMPv2: Configure Read-Only community and restrict who can connect
-rocommunity NetManage 100.68.100.0/24
-rocommunity NetManage 100.68.{{class_group}}.16/28
-rocommunity NetManage 100.68.{{class_group}}.254/32
-rocommunity NetManage 127.0.0.1
-rocommunity6 NetManage ::1
-
-# Information about this host
-sysLocation    NPIX Network Management Workshop
-sysContact     lab@{{inventory_hostname}}
-
-# Which OSI layers are active in this host
-# (Application + End-to-End layers)
-sysServices    72
-
-# Include proprietary dskTable MIB (in addition to hrStorageTable)
-includeAllDisks  10%
-
-createUser admin SHA &quot;NetManage&quot; AES
-rwuser admin
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Smokeping</span> <span class="hljs-string">Monitoring</span> <span class="hljs-string">Target</span> <span class="hljs-string">config</span>
 <span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/smokeping/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/smokeping/config.d</span>
+<span class="hljs-attr">        backup:</span> <span class="hljs-literal">yes</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">Targets</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">target_config</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">smokeping</span>
 
 <span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">apache</span>
 <span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">apache2</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">smokeping</span>
+<span class="hljs-attr">      service:</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">smokeping</span>
 <span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
 </div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook smokeping.yml -t base_config
 
-PLAY [snmp_hosts] *********************************************************************************************
+PLAY [smokeping_hosts] ****************************************************************************************
 
 TASK [Gathering Facts] ****************************************************************************************
 ok: [vmX-gY.lab.workalaya.com]
 
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
+TASK [Smokeping General config] *******************************************************************************
+ok: [vmX-gY.lab.workalaya.com] =&gt; (item=General)
+ok: [vmX-gY.lab.workalaya.com] =&gt; (item=Alerts)
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=Probes)
 
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-TASK [Update /etc/snmp/snmpd.conf] ****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-RUNNING HANDLER [restart snmpd] *******************************************************************************
+RUNNING HANDLER [restart smokeping] ***************************************************************************
 changed: [vmX-gY.lab.workalaya.com]
 
 PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+vmX-gY.lab.workalaya.com   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 </div></code></pre>
-<h2 id="check-that-snmpd-is-working"><strong>Check that snmpd is working:</strong></h2>
-<p>log into your vm and run following command</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus localhost
+<h3 id="add-http-latency-checks-for-the-vms"><strong>Add HTTP latency checks for the VMs</strong></h3>
+<p>Edit the <em>Targets</em> template file again and go to the end of the file:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/smokeping/Targets
 </div></code></pre>
-<h2 id="test-your-neighbors"><strong>Test your neighbors</strong></h2>
-<p>Check now that you can run snmpstatus against your other group members host.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus vm[1..3]-gY.lab.workalaya.net
+<pre class="hljs"><code><div>#
+# Local Web server response
+#
+
++HTTP
+
+menu = Local HTTP Response
+title = HTTP Response of VMs
+
+{% for host in range(1,4) %}
+++vm{{host}}
+
+menu = vm{{host}}
+title = vm{{host}}-g{{class_group}} HTTP response time
+probe = EchoPingHttp
+host = vm{{host}}-g{{class_group}}.lab.workalaya.net
+
+{% endfor %}
 </div></code></pre>
-<p>For instance, in group 5, you should verify against:</p>
-<ul>
-<li>vm1-g5.lab.workalaya.net</li>
-<li>vm2-g5.lab.workalaya.net</li>
-<li>vm3-g5.lab.workalaya.net
-and, so on.</li>
-</ul>
-<h2 id="configuration-of-snmpd-on-your-srv1-gylabworkalayanet-server"><strong>Configuration of snmpd on your srv1-gY.lab.workalaya.net server</strong></h2>
-<p>You may want to install the snmp daemon on your campus server at this time. If so, select someone from your group to do this. If not, it will be configured during a later exercise.</p>
-<p>(follow the same process as of configuring your own VM)</p>
-<h2 id="adding-mibs"><strong>Adding MIBs</strong></h2>
-<p>Remember when you ran:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
+<p>You could also use the &quot;probe = EchoPingHttp&quot; statement once for vm1, and then this would be the default probe until another &quot;probe = &quot; statement is seen in the Targets file.</p>
+<p>You can add more host entries if you wish, or you could consider checking the latency on remote machines - these are likely to be more interesting. Machines such as your own publicly accessible servers are a good choice, or, perhaps other web servers you use often (Google, Yahoo, Government pages, stores, etc.?).</p>
+<p>For example, consider adding something like this at the bottom of the Targets file:</p>
+<pre class="hljs"><code><div>#
+# Remote Web server response
+#
+
++HTTPSRemote
+
+menu = Remote HTTPS Response
+title = HTTPS Response Remote Machines
+
+++google
+
+menu = Google
+title = Google.com HTTPS response time
+probe = EchoPingHttps
+host = www.google.org
+
+++workalaya
+
+menu = Workalaya R and D
+title = workalaya.net HTTPS response time
+probe = EchoPingHttps
+host = workalaya.net
+
+++facebook
+
+menu = Facebook
+title = Facebook HTTPS response time
+probe = EchoPingHttps
+host = www.facebook.com
 </div></code></pre>
-<p>If you noticed, the SNMP client (snmpwalk) couldn't interpret all the OIDs coming back from the Agent:</p>
-<pre class="hljs"><code><div>SNMPv2-SMI::enterprises.9.9.13.1.3.1.2.1 = STRING: &quot;chassis&quot;
-SNMPv2-SMI::enterprises.9.9.13.1.3.1.6.1 = INTEGER: 1
-</div></code></pre>
-<p>What is <em>9.9.13.1.3.1</em> ?</p>
-<p>To be able to interpret this information, we need to download extra MIBs:</p>
-<p>We will use the following MIBs (Don't download them yet!):</p>
-<h3 id="cisco-mibs"><strong>CISCO MIBS</strong></h3>
-<pre class="hljs"><code><div>ftp://ftp.cisco.com/pub/mibs/v2/CISCO-SMI.my
-ftp://ftp.cisco.com/pub/mibs/v2/CISCO-ENVMON-MIB.my
-</div></code></pre>
-<p>To make it easier, we have a local mirror on <a href="http://www.lab.workalaya.net/downloads/mibs/">http://www.lab.workalaya.net/downloads/mibs/</a></p>
-<p>we will update ansible playbook named <strong><em>snmp.yml</em></strong> to Download mib and update <em>/etc/snmp/snmp.conf</em> to include them as follows:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
+<p>Add your own hosts that you use at your organization to the list of Remote Web Servers.</p>
+<p>Now run ansible playbook to update <em>Smokeping</em> configuration</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook smokeping.yml -t target_config
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">check</span> <span class="hljs-string">if</span> <span class="hljs-string">mibs</span> <span class="hljs-string">exists</span>
-<span class="hljs-attr">      stat:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">'/var/lib/snmp/mibs/cisco/<span class="hljs-template-variable">{{ item }}</span>'</span>
-<span class="hljs-attr">      register:</span> <span class="hljs-string">mib_files</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">if</span> <span class="hljs-string">mib</span> <span class="hljs-string">files</span> <span class="hljs-string">exist</span>
-<span class="hljs-attr">      set_fact:</span>
-<span class="hljs-attr">        mib_file_stat:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ mib_file_stat|default({}) | combine({item.item: item.stat.exists}) }}</span>"</span>
-<span class="hljs-attr">      with_items:</span> <span class="hljs-string">'<span class="hljs-template-variable">{{ mib_files.results }}</span>'</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Download</span> <span class="hljs-string">mibs</span>
-<span class="hljs-attr">      get_url:</span>
-<span class="hljs-attr">        url:</span> <span class="hljs-attr">http://www.lab.workalaya.net/downloads/mibs/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">mib_file_stat[item]</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span> <span class="hljs-string">file</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{item}}</span>"</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibdirs +/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibs +CISCO-ENVMON-MIB:CISCO-SMI"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
-</div></code></pre>
-<p>run ansible playbook as follows and should see similar output:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t mibs
-
-PLAY [snmp_hosts] *********************************************************************************************
+PLAY [smokeping_hosts] ****************************************************************************************
 
 TASK [Gathering Facts] ****************************************************************************************
 ok: [vmX-gY.lab.workalaya.com]
 
-TASK [Create /var/lib/snmp/mibs/cisco] ************************************************************************
+TASK [Smokeping Monitoring Target config] *********************************************************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=Targets)
+
+RUNNING HANDLER [restart smokeping] ***************************************************************************
 changed: [vmX-gY.lab.workalaya.com]
 
-TASK [check <span class="hljs-keyword">if</span> mibs exists] ***********************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
+PLAY RECAP ****************************************************************************************************
+vmX-gY.lab.workalaya.com   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
+<p>you can view the results of your changes by going to:</p>
+<pre class="hljs"><code><div>http://vmX-gY.lab.workalaya.net/smokeping/smokeping.cgi
+</div></code></pre>
+<h3 id="add-dns-latency-checks"><strong>Add DNS latency checks</strong></h3>
+<p>At the end of the Targets file we are going to add some entries to verify the latency from our location to remote recursive DNS servers to look up an entry for workalaya.net.</p>
+<p>You would likely substitute an important address for your institution in the Probes file instead. In addition, you can change the address you are looking up inside the Targets file as well. For more information see:</p>
+<p><a href="http://oss.oetiker.ch/smokeping/probe/DNS.en.html">http://oss.oetiker.ch/smokeping/probe/DNS.en.html</a> and <a href="http://oss.oetiker.ch/smokeping/probe/index.en.html">http://oss.oetiker.ch/smokeping/probe/index.en.html</a></p>
+<p>Now edit the Targets file again. Be sure to go to the end of the file:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/smokeping/Targets
+</div></code></pre>
+<pre class="hljs"><code><div>#
+# Sample DNS probe
+#
 
-TASK [Check <span class="hljs-keyword">if</span> mib files exist] *******************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-SMI.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-SMI.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
++DNS
 
-TASK [Download mibs] ******************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
+probe = DNS
+menu = DNS Latency
+title = DNS Latency Probes
 
-TASK [update /etc/snmp/snmp.conf file] ************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibdirs +/var/lib/snmp/mibs/cisco)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibs +CISCO-ENVMON-MIB:CISCO-SMI)
+++LocalDNS1
+menu = ns1.lab.workalaya.net
+title =  DNS Delay for local DNS Server on ns1.lab.workalaya.net
+host = ns1.lab.workalaya.net
+
+++Quad9
+menu = 9.9.9.9
+title = DNS Latency for dns.quad9.net
+host = dns.quad9.net
+
+++CloudflareDNS
+menu = 1.1.1.1
+title = DNS Latency for one.one.one.one
+host = one.one.one.one
+
+++GoogleA
+menu = 8.8.8.8
+title = DNS Latency for google-public-dns-a.google.com
+host = google-public-dns-a.google.com
+
+++GoogleB
+
+menu = 8.8.4.4
+title = DNS Latency for google-public-dns-b.google.com
+host = google-public-dns-b.google.com
+
+++OpenDNSA
+
+menu = 208.67.222.222
+title = DNS Latency for resolver1.opendns.com
+host = resolver1.opendns.com
+
+++OpenDNSB
+
+menu = 208.67.220.220
+title = DNS Latency for resolver2.opendns.com
+host = resolver2.opendns.com
+</div></code></pre>
+<p>Now run ansible playbook to update <em>Smokeping</em> configuration</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook smokeping.yml -t target_config
+
+PLAY [smokeping_hosts] ****************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************
+ok: [vmX-gY.lab.workalaya.com]
+
+TASK [Smokeping Monitoring Target config] *********************************************************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=Targets)
+
+RUNNING HANDLER [restart smokeping] ***************************************************************************
+changed: [vmX-gY.lab.workalaya.com]
 
 PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+vmX-gY.lab.workalaya.com   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 </div></code></pre>
-<p>Now, try again (the example uses rtr1-gY.lab.workalaya.net below. You can do this whichever network device you are configuring):</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
+<p>you can view the results of your changes by going to:</p>
+<pre class="hljs"><code><div>http://vmX-gY.lab.workalaya.net/smokeping/smokeping.cgi
 </div></code></pre>
-<p>What do you notice ?</p>
-<h2 id="snmpwalk---the-rest-of-mib-ii"><strong>SNMPwalk - the rest of MIB-II</strong></h2>
-<p>Try and run snmpwalk on any hosts (routers and virtual machines) you have not tried yet, in the 100.68.Y.X network</p>
-<p>Note the kind of information you can obtain.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifDescr
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAlias
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifXTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifOperStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAdminStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 <span class="hljs-keyword">if</span>
+<h3 id="multihost-graphing"><strong>MultiHost graphing</strong></h3>
+<p>Once you have defined a group of hosts under a single probe type in your /etc/smokeping/config.d/Targets file, then you can create a single graph that will show you the results of all smokeping tests for all hosts that you define. This has the advantage of letting you quickly compare, for example, a group of hosts that you are monitoring with the FPing probe.</p>
+<p>The MultiHost graph function in Smokeping has difficult syntax - pay close attention!</p>
+<p>To create a MultiHost graph first edit the file Targets:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/smokeping/Targets
 </div></code></pre>
-<p>(Remember that with <em>less</em> you press <strong><em>&lt;space&gt;</em></strong> for next page, <strong><em>b</em></strong> to go back to previous page, and <strong><em>q</em></strong> to quit)</p>
-<p>Can you see what's different between <strong><em>ifTable</em></strong> and <strong><em>ifXTable</em></strong>?</p>
-<p>What do you think might be the difference between <strong><em>ifOperStatus</em></strong> and <strong><em>ifAdminStatus</em></strong>? Can you imagine a scenario where this could be useful ?</p>
-<h2 id="more-mib-oid-fun"><strong>More MIB-OID fun</strong></h2>
-<p>Use SNMP to examine:</p>
-<ul>
-<li>the running processes on your neighbor's host (hrSWRun)</li>
-<li>the amount of free diskspace on your neighbor's host (hrStorage)</li>
-<li>the interfaces on your neighbor's host (ifIndex, ifDescr)</li>
-</ul>
-<p>Can you use short names to walk these OID tables ?</p>
-<ul>
-<li>Experiment with the &quot;snmptranslate&quot; command, example:</li>
-</ul>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmptranslate .1.3.6.1.4.1.9.9.13.1
+<p>We will create a MultiHost graph for the DNS Latency probes we just added. To do this go to the end of the Targets file and add:</p>
+<pre class="hljs"><code><div>#
+# Multihost Graph of all DNS latency checks
+#
+
+++MultiHostDNS
+
+menu = MultiHost DNS
+title = Consolidated DNS Responses
+host = /DNS/LocalDNS1 /DNS/Quad9 /DNS/CloudflareDNS /DNS/GoogleA /DNS/GoogleB /DNS/OpenDNSA /DNS/OpenDNSB
 </div></code></pre>
-<ul>
-<li>Try with various OIDs</li>
-</ul>
+<p>Now run ansible playbook to update <em>Smokeping</em> configuration</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook smokeping.yml -t target_config
+
+PLAY [smokeping_hosts] ****************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************
+ok: [vmX-gY.lab.workalaya.com]
+
+TASK [Smokeping Monitoring Target config] *********************************************************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=Targets)
+
+RUNNING HANDLER [restart smokeping] ***************************************************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+PLAY RECAP ****************************************************************************************************
+vmX-gY.lab.workalaya.com   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
+<p>If this fails you almost certainly have an error in the entries. If you cannot figure out what the error is (remember to try &quot;tail /var/log/syslog&quot; first!) ask your instructor for some help.</p>
+<p>you can view the results of your changes by going to:</p>
+<pre class="hljs"><code><div>http://vmX-gY.lab.workalaya.net/smokeping/smokeping.cgi
+</div></code></pre>
+<p>You can add MultiHost graphs for any other set of probe tests (FPing, EchoPingHttp) that you have configured. You must add the MultiHost entry at the end of a probe section. If you don't understand how this works you can ask your instructors for help.</p>
+<h3 id="send-smokeping-alerts"><strong>Send Smokeping alerts</strong></h3>
+<p>Update your device entries to include a line that reads:</p>
+<pre class="hljs"><code><div>alerts = alertName1, alertName2, etc, etc...
+</div></code></pre>
+<p>For instance, the alert named, &quot;someloss&quot; has already been defined in the file Alerts:</p>
+<p>To read about Smokeping alerts and what they are detecting, how to create your own, etc. see:</p>
+<p><a href="http://oss.oetiker.ch/smokeping/doc/smokeping_config.en.html">http://oss.oetiker.ch/smokeping/doc/smokeping_config.en.html</a></p>
+<p>and at the bottom of the page is a section titled <em>*** Alerts ***</em></p>
+<p>To place some alert detection on some of your hosts, open the Targets file:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/smokeping/Targets
+</div></code></pre>
+<p>and go near the start of the file where we defined our hosts. Just under the &quot;host =&quot; line add another line that looks like this:</p>
+<pre class="hljs"><code><div>alerts = someloss
+</div></code></pre>
+<p>So, for example, the entry for all VMx on campusY would look like this:</p>
+<pre class="hljs"><code><div>{% for host in range(1,4) %}
+++vm{{host}}
+
+menu = vm{{host}}
+title = Group {{class_group}} Server {{host}}
+host = vm{{host}}-g{{class_group}}.lab.workalaya.net
+alerts = someloss
+
+{% endfor %}
+</div></code></pre>
+<p>If you want to add an alerts option to other hosts go ahead. Once you are done save and exit from the Targets file and then run ansible playbook:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook smokeping.yml -t target_config
+
+PLAY [smokeping_hosts] ****************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************
+ok: [vmX-gY.lab.workalaya.com]
+
+TASK [Smokeping Monitoring Target config] *********************************************************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=Targets)
+
+RUNNING HANDLER [restart smokeping] ***************************************************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+PLAY RECAP ****************************************************************************************************
+vmX-gY.lab.workalaya.com   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
+<p>If any of the hosts that have the &quot;alerts = &quot; option set meet the conditions to set off the alert, then an email will arrive to the lab user's mailbox on the Smokeping server machine (localhost). It's not likely that an alert will be set off for most machines. To check you can read the email for the lab user by using an email client like &quot;mutt&quot; -</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ mutt
+</div></code></pre>
+<p>Say yes to mailbox creation when prompted, then see if you have email from the smokeping-alerts@localhost user. You probably will not. To exit from Mutt press &quot;q&quot;.</p>
+<hr>
+<h3 id="slave-instances---informational-only"><strong>Slave instances - Informational Only</strong></h3>
+<p>This is a description only for informational purposes in case you wish to attempt this type of configuration once the workshop is over.</p>
+<p>The idea behind this is that you can run multiple smokeping instances at multiple locations that are monitoring the same hosts and/or services as your master instance. The slaves will send their results to the master server and you will see these results side-by-side with your local results. This allows you to view how users outside your network see your services and hosts.</p>
+<p>This can be a powerful tool for resolving service and host issues that may be difficult to troubleshoot if you only have local data.</p>
+<p>Graphically this looks this:</p>
+<pre class="hljs"><code><div>          [slave 1]     [slave 2]      [slave 3]
+                |             |              |
+                +-------+     |     +--------+
+                        |     |     |
+                        v     v     v
+                        +---------------+
+                        |    master     |
+                        +---------------+
+</div></code></pre>
+<p>You can see example of this data here:</p>
+<p><a href="http://oss.oetiker.ch/smokeping-demo/">http://oss.oetiker.ch/smokeping-demo/</a></p>
+<p>Look at the various graph groups and notice that many of the graphs have multiple lines with the color code chart listing items such as &quot;median RTT from freddie&quot; - These are not MultiHost graphs, but rather graphs with data from external smokeping servers.</p>
+<p>To configure a smokeping master/slave server you can see the documentation here:</p>
+<p><a href="http://oss.oetiker.ch/smokeping/doc/smokeping_master_slave.en.html">http://oss.oetiker.ch/smokeping/doc/smokeping_master_slave.en.html</a></p>
 <hr>
 
 </body>

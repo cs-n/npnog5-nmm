@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>exercises-snmp.md</title>
+<title>ansible-setup.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -421,647 +421,246 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
           : 'default'
     });
   </script>
-<h1 id="snmp-installation-and-configuration"><strong>SNMP Installation and Configuration</strong></h1>
-<h2 id="introduction"><strong>Introduction</strong></h2>
-<h3 id="goals"><strong>Goals</strong></h3>
-<ul>
-<li>Install and configure SNMP</li>
-</ul>
-<h3 id="notes"><strong>Notes</strong></h3>
-<ul>
-<li>Commands preceded with &quot;$&quot; imply that you should execute the command as a general user - not as root.</li>
-<li>Commands preceded with &quot;#&quot; imply that you should be working as root.</li>
-<li>Commands with more specific command lines (e.g. &quot;rtrX&gt;&quot; or &quot;mysql&gt;&quot;) imply that you are executing commands on remote equipment, or within another program.</li>
-<li>If a command line ends with &quot;\&quot; this indicates that the command continues on the next line and you should treat this as a single line.</li>
-<li>References to &quot;Y&quot; represent your group number.</li>
-</ul>
+<h1 id="ansible-install-and-setup"><strong>Ansible Install and Setup</strong></h1>
+<h2 id="1-objective"><strong>1. Objective</strong></h2>
+<p>This exercise will get ansible up and running, to the point where it is able to run commands on all the remote systems you are managing.</p>
 <hr>
-<h2 id="installing-client-manager-tools"><strong>Installing client (manager) tools</strong></h2>
-<p>Start by installing the net-snmp tools on your individual host.</p>
-<p><strong>Log in to your shared workstation virtual machine as &quot;vmXgY&quot; user.</strong> (Replace X with vm no and Y with group no)</p>
-<p>Now we create new ansible-playbook file named <strong><em>snmp.yml</em></strong></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+<h2 id="2-initial-setup"><strong>2. Initial setup</strong></h2>
+<h3 id="2-1-conect"><strong>2. 1. Conect</strong></h3>
+<p>Login to <em><strong>ansible-gY.lab.workalaya.net</strong></em></p>
+<p>Make sure you connect to this as your normal (&quot;vmX-gY&quot;) user. You will use &quot;sudo&quot; where specific commands need to be run as root. It is good practice to do this.</p>
+<h3 id="2-2-upload-ssh-key-of-control-machine-user-to-our-virtual-machine"><strong>2. 2. Upload SSH key of control machine user to our virtual machine</strong></h3>
+<p>Upload SSH key</p>
+<pre class="hljs"><code><div>vmX-gY@ansible-gY:~$ ssh-copy-id lab@vmX-gY.lab.workalaya.net
+/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: <span class="hljs-string">"/home/vmX-gY/.ssh/id_rsa.pub"</span>
+The authenticity of host <span class="hljs-string">'vmX-gY.lab.workalaya.net (100.68.Y.21)'</span> can<span class="hljs-string">'t be established.
+ECDSA key fingerprint is SHA256:joFwxYalAr4kaS5RbHi1m8tqd0LlmVocWYeBJvpnb2I.
+Are you sure you want to continue connecting (yes/no)? yes
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+lab@vmX-gY.lab.workalaya.net'</span>s password:
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   <span class="hljs-string">"ssh 'lab@vmX-gY.lab.workalaya.net'"</span>
+and check to make sure that only the key(s) you wanted were added.
+
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<p>Check if we can login without using password</p>
+<pre class="hljs"><code><div>vmX-gY@ansible-gY:~$ ssh lab@vmX-gY.lab.workalaya.net
 </div></code></pre>
-<p>update inventory/hosts as following</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
+<h3 id="2-2-install-ansible-package"><strong>2. 2. Install ansible package</strong></h3>
+<pre class="hljs"><code><div>vmX-gY@ansible-gY$ <span class="hljs-built_in">cd</span>
+vmX-gY@ansible-gY$ mkdir ansible-playbook
+vmX-gY@ansible-gY$ <span class="hljs-built_in">cd</span> ansible-playbook
+vmX-gY@ansible-gY:~/ansible-playbook$ python3 -m venv venv
+vmX-gY@ansible-gY:~/ansible-playbook$ <span class="hljs-built_in">source</span> venv/bin/activate
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ pip install ansible
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ <span class="hljs-built_in">echo</span> <span class="hljs-string">"venv"</span> &gt; .gitignore
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git init
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git add .
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git commit -am <span class="hljs-string">"Initial Commit"</span>
 </div></code></pre>
-<pre class="hljs"><code><div>[nagios_hosts]
-vmX-gY.lab.workalaya.net
-
-[snmp_hosts]
-vmX-gY.lab.workalaya.net
-</div></code></pre>
-<p>Now run ansible playbook to install snmp client tools</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Now, in your home directory make a .snmp directory with file snmp.conf inside it, make it readable only by you, and add the credentials to it:</p>
-<p>You will perform this task using ansible.</p>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-</div></code></pre>
-<p>and create new file named snmp.conf inside file/snmp/</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/snmp
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/snmp/snmp.conf
-</div></code></pre>
-<p>Put the following contents in the file:</p>
-<pre class="hljs"><code><div>defVersion 3
-defSecurityLevel authNoPriv
-defSecurityName admin
-defAuthPassphrase NetManage
-defAuthType SHA
-defPrivType AES
-
-# Default community when using SNMP v2c
-defCommunity NetManage
-</div></code></pre>
-<p>Now run ansible playbook named <strong><em>snmp.yml</em></strong> again should see similar output</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp directory <span class="hljs-keyword">in</span> /home/lab/] *******************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp/snmp.conf] *********************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Creating this configuration file means you won't have to enter your credentials everytime you use one of the SNMP utilities. Otherwise you would have to add all these values on the command line like this:</p>
-<p>now log into your vm and try executing following command</p>
-<p>(this command will not yet work)</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v3 -l authNoPriv -a SHA -u admin -A NetManage vmX-gY
-</div></code></pre>
-<h2 id="configure-snmp-on-your-group-routers-and-switches"><strong>Configure SNMP on Your Group Routers and Switches</strong></h2>
-<p>For this exercise you need to work together as a group. You will be enabling and configuring snmp to run on each of your group network devices. This includes:</p>
+<h3 id="2-3-create-new-github-repository"><strong>2. 3. Create new GitHub repository</strong></h3>
+<p>From now on everything we do anythig related to ansible we will track that using git</p>
 <ul>
-<li>rtr1-gY.lab.workalaya.net</li>
-</ul>
-<p>The commands to enable ssh are the same on each box, so divide the work between your group member:</p>
-<p>Now connect to your campus network devices and on each do:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
-
-username: lab
-password: &lt;CLASS PASSWORD&gt;
-
-rtr1-gY&gt; <span class="hljs-built_in">enable</span>
-Password: &lt;CLASS PASSWORD&gt;
-rtr1-gY<span class="hljs-comment"># configure terminal</span>
-</div></code></pre>
-<p>Now we need to add an Access Control List rule for SNMP access, turn on SNMP, assign a read-only SNMP community string as well as a SNMPv3 group and user and tell the router to maintain SNMP information across reboots. To do this we do:</p>
-<p>(Note that &quot;Y&quot; is equal to your campus number)</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# snmp-server community NetManage ro 99
-rtr1-gY(config)# snmp-server group ReadGroup v3 auth access 99
-rtr1-gY(config)# access-list 99 permit 100.68.Y.1 0.0.0.0
-rtr1-gY(config)# access-list 99 permit 100.68.Y.16 0.0.0.15
-rtr1-gY(config)# access-list 99 permit 100.68.100.0 0.0.0.255
-rtr1-gY(config)# snmp-server user admin ReadGroup v3 auth sha NetManage
-rtr1-gY(config)# snmp-server ifindex persist
-</div></code></pre>
-<p>Now let's exit and save this new configuration to the routers permanent config.</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# exit
-rtr1-gY# write memory
-rtr1-gY# exit
-</div></code></pre>
-<p>If you have questions about what the access-list statement is restricting ask your instructors.</p>
-<h2 id="testing-snmp"><strong>Testing SNMP</strong></h2>
-<p>To check that your SNMP installation works, run the snmpstatus command on each of the following devices from your host:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>Where is each of the following:</p>
-<pre class="hljs"><code><div>Group border router: 100.68.Y.1
-</div></code></pre>
-<p><strong>Note</strong>: that you just used SNMPv3. Not all devices that implement SNMP support v3. Try again, adding &quot;-v2c&quot; as a parameter. Notice that the command automatically uses the community string in the snmp.conf file instead of the v3 user credentials. Try &quot;-v1&quot;. That is try:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v1 &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>What happens if you try using the wrong community string (i.e. change NetManage to something else) using the options &quot;-v2c -c NetWrong&quot;?</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c -c NetWrong &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<h2 id="snmp-walk-and-oids"><strong>SNMP Walk and OIDs</strong></h2>
-<p>Now, you are going to use the <strong><em>snmpwalk</em></strong> command, part of the SNMP toolkit, to list the tables associated with the OIDs listed below, on each piece of equipment you tried above:</p>
-<pre class="hljs"><code><div>.1.3.6.1.2.1.2.2.1.2
-.1.3.6.1.2.1.31.1.1.1.18
-.1.3.6.1.4.1.9.9.13.1
-.1.3.6.1.2.1.25.2.3.1
-.1.3.6.1.2.1.25.4.2.1
-</div></code></pre>
-<p>You will try this with two forms of the <strong><em>snmpwalk</em></strong> command:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c &lt;IP_ADDRESS&gt; &lt;OID&gt;
-</div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c -On &lt;IP_ADDRESS&gt; &lt;OID&gt;
-</div></code></pre>
-<p>... where OID is one of the OIDs listed above: .1.3.6...</p>
-<p>...where IP_ADDRESS can be your group's router...</p>
-<p><strong>Note</strong>: the -On option turns on numerical output, i.e.: no translation of the OID &lt;-&gt; MIB object takes place.</p>
-<p>For these OIDs:</p>
-<ol>
-<li>Do all the devices answer?</li>
-<li>Do you notice anything important about the OID on the output?</li>
-</ol>
-<h2 id="configuration-of-snmpd-on-your-host-vmx-gylabworkalayanet"><strong>Configuration of snmpd on your host (vmX-gY.lab.workalaya.net)</strong></h2>
-<p>For this exercise your group needs to verify that the snmpd service is running and responding to queries for all machines in your group. First enable snmpd on your machine, then test if your machine is responding, then check each machine of your other group members.</p>
+<li>Go to <a href="https://github.com/">github</a>.</li>
+<li>Log in to your account.</li>
+<li>Click the <a href="https://github.com/new">new repository</a> button in the top-right.
 <ul>
-<li>Install the SNMP agent (daemon) on your host</li>
+<li>give repository name as <code>npnog5-nmm-ansible-playbook</code></li>
+<li>select <code>private</code> as repository type</li>
+<li>there is an option to initialize the repository with a README file, but don’t check this option.</li>
 </ul>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+</li>
+<li>Click the “Create repository” button.</li>
+<li>Click <code>SSH</code> button</li>
+</ul>
+<p>Now, follow the second set of instructions, “Push an existing repository from the command line”</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git remote add origin git@github.com:username/npnog5-nmm-first.git
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git push -u origin master
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd-server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
+<h3 id="2-4-configure-ansible"><strong>2. 4. Configure ansible</strong></h3>
+<p>Cerate ansible config file &quot;<strong>ansible.cfg</strong>&quot;</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ vi ansible.cfg
 </div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
+<p>Add following content in &quot;<strong>ansible.cfg</strong>&quot;</p>
+<pre class="hljs"><code><div>[defaults]
+inventory = inventory
 
-PLAY [snmp_hosts] *********************************************************************************************
+retry_files_save_path = ./retry/
 
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
+host_key_checking = False
 
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+local_tmp = ./tmp/
 </div></code></pre>
+<p>Save and exit for vi editor</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git add .
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git commit -am <span class="hljs-string">"add ansible.cfg"</span>
+</div></code></pre>
+<h3 id="2-5-create-inventory"><strong>2. 5. Create inventory</strong></h3>
+<p>Now you need to list all your other hosts in the inventory: that is, the machines you are going to manage using ansible.</p>
+<p>You need to edit the file <strong>~/ansible-playbook/inventory/hosts</strong>, for example:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ mkdir inventory
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ vi inventory/hosts
+</div></code></pre>
+<p>Add the full hostnames of the other hosts you have, not including the master host where you are running ansible.</p>
+<pre class="hljs"><code><div>vmX-gY.lab.workalaya.net ansible_ssh_user=lab
+</div></code></pre>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git add .
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git commit -am <span class="hljs-string">"add inventory/host"</span>
+</div></code></pre>
+<hr>
+<h2 id="3-getting-ansible-to-connect"><strong>3. Getting ansible to connect</strong></h2>
+<p>Probably the hardest part of working with ansible is getting it to connect to your hosts. After that it's plain sailing <img class="emoji" alt="smiley" src="data:image/png;base64,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" /></p>
+<p>There is a module called &quot;<strong>ping</strong>&quot; which you can use to test the connections. It does nothing but respond with a &quot;<strong>pong</strong>&quot;.</p>
+<p>So now try the following command:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m ping
+</div></code></pre>
+<p>What this means is:</p>
 <ul>
-<li>Configuration</li>
+<li>Connect to all hosts listed in your inventory</li>
+<li>Run the module (-m) called &quot;<strong>ping</strong>&quot; on those hosts</li>
 </ul>
-<p>We will create our own &quot;snmpd.conf&quot; template file and not &quot;snmp.conf&quot; and update ansible playbook named <strong><em>snmp.yml</em></strong> file</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p templates/snmpd
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/snmpd/snmpd.conf
+<p>If you see output similar to following your host is ready to manage using ansible.</p>
+<pre class="hljs"><code><div>vmX-gY.lab.workalaya.net | SUCCESS =&gt; {
+    &quot;ansible_facts&quot;: {
+        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;
+    },
+    &quot;changed&quot;: false,
+    &quot;ping&quot;: &quot;pong&quot;
+}
 </div></code></pre>
-<p>Then, copy/paste the following (change vmX-gY to your own host and campus number) and replace &quot;Y&quot; with your campus number:</p>
-<pre class="hljs"><code><div>#  Listen for connections on all interfaces (both IPv4 *and* IPv6)
-agentAddress udp:161,udp6:161
-
-# For SNMPv2: Configure Read-Only community and restrict who can connect
-rocommunity NetManage 100.68.100.0/24
-rocommunity NetManage 100.68.{{class_group}}.16/28
-rocommunity NetManage 100.68.{{class_group}}.254/32
-rocommunity NetManage 127.0.0.1
-rocommunity6 NetManage ::1
-
-# Information about this host
-sysLocation    NPIX Network Management Workshop
-sysContact     lab@{{inventory_hostname}}
-
-# Which OSI layers are active in this host
-# (Application + End-to-End layers)
-sysServices    72
-
-# Include proprietary dskTable MIB (in addition to hrStorageTable)
-includeAllDisks  10%
-
-createUser admin SHA &quot;NetManage&quot; AES
-rwuser admin
+<p>Very likely you are going to see an error like this:</p>
+<pre class="hljs"><code><div>vmX-gY.lab.workalaya.net | UNREACHABLE! =&gt; {
+    &quot;changed&quot;: false,
+    &quot;msg&quot;: &quot;Failed to connect to the host via ssh: Warning: Permanently added 'vmX-gY.lab.workalaya.net,100.68.Y.21' (ECDSA) to the list of known hosts.\r\nlab@vmX-gY.lab.workalaya.net: Permission denied (publickey,password).&quot;,
+    &quot;unreachable&quot;: true
+}
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
+<p>or</p>
+<pre class="hljs"><code><div>vmX-gY.lab.workalaya.net | FAILED =&gt; SSH encountered an unknown error during the
+connection. We recommend you re-run the command using -vvvv, which will
+enable SSH debugging output to help diagnose the issue
 </div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-TASK [Update /etc/snmp/snmpd.conf] ****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-RUNNING HANDLER [restart snmpd] *******************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+<p>So let's do as it suggests, and see if that gives some more information. To make the output easier to read, you can tell ansible to connect to only a single host instead of &quot;all&quot;.</p>
+<pre class="hljs"><code><div>ansible vmX-gY.lab.workalaya.net -m ping -vvvv
 </div></code></pre>
-<h2 id="check-that-snmpd-is-working"><strong>Check that snmpd is working:</strong></h2>
-<p>log into your vm and run following command</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus localhost
+<h3 id="31-key-problems"><strong>3.1 Key problems</strong></h3>
+<p>Do you see an error like this?</p>
+<pre class="hljs"><code><div>...
+debug1: No more authentication methods to try.
+Permission denied (publickey,password).
 </div></code></pre>
-<h2 id="test-your-neighbors"><strong>Test your neighbors</strong></h2>
-<p>Check now that you can run snmpstatus against your other group members host.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus vm[1..3]-gY.lab.workalaya.net
+<p>Then it means that it tried to use public key authentication, but failed.</p>
+<p>Are you able to use ssh directly at the command line to login to the other host?</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ssh vmX-gY.lab.workalaya.net
 </div></code></pre>
-<p>For instance, in group 5, you should verify against:</p>
+<p>If not, then you need to debug this problem.</p>
 <ul>
-<li>vm1-g5.lab.workalaya.net</li>
-<li>vm2-g5.lab.workalaya.net</li>
-<li>vm3-g5.lab.workalaya.net
-and, so on.</li>
+<li>Did you have Agent Forwarding enabled when you connected to your master ansible host? If not, you will need to disconnect and reconnect with agent forwarding.</li>
+<li>Does your public key exist in /home/lab/.ssh/authorized_keys on the host you are connecting to?</li>
+<li>Do that file and the enclosing .ssh directory have the correct permissions? (Must not be world-writeable or group-writeable)</li>
 </ul>
-<h2 id="configuration-of-snmpd-on-your-srv1-gylabworkalayanet-server"><strong>Configuration of snmpd on your srv1-gY.lab.workalaya.net server</strong></h2>
-<p>You may want to install the snmp daemon on your campus server at this time. If so, select someone from your group to do this. If not, it will be configured during a later exercise.</p>
-<p>(follow the same process as of configuring your own VM)</p>
-<h2 id="adding-mibs"><strong>Adding MIBs</strong></h2>
-<p>Remember when you ran:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
+<h3 id="32-the-shell-module"><strong>3.2 The shell module</strong></h3>
+<p>The &quot;shell&quot; module gives you a simple way to run commands on a remote host or hosts. Try it:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m shell -a <span class="hljs-string">'ls /'</span>
 </div></code></pre>
-<p>If you noticed, the SNMP client (snmpwalk) couldn't interpret all the OIDs coming back from the Agent:</p>
-<pre class="hljs"><code><div>SNMPv2-SMI::enterprises.9.9.13.1.3.1.2.1 = STRING: &quot;chassis&quot;
-SNMPv2-SMI::enterprises.9.9.13.1.3.1.6.1 = INTEGER: 1
+<p>Did it connect to all hosts? Did it give a directory listing from each host?</p>
+<p>Don't move on until the &quot;ping&quot; and &quot;shell&quot; modules are working. Ask for help from an instructor if you need it.</p>
+<hr>
+<h2 id="4-running-commands-as-root"><strong>4. Running commands as root</strong></h2>
+<p>The commands you have tried so far don't need to run with root privileges on the target system, but most system adminstration commands do.</p>
+<p>Try the following command, which shows the content of a protected file containing password hashes:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m shell -a <span class="hljs-string">'cat /etc/shadow'</span>
 </div></code></pre>
-<p>What is <em>9.9.13.1.3.1</em> ?</p>
-<p>To be able to interpret this information, we need to download extra MIBs:</p>
-<p>We will use the following MIBs (Don't download them yet!):</p>
-<h3 id="cisco-mibs"><strong>CISCO MIBS</strong></h3>
-<pre class="hljs"><code><div>ftp://ftp.cisco.com/pub/mibs/v2/CISCO-SMI.my
-ftp://ftp.cisco.com/pub/mibs/v2/CISCO-ENVMON-MIB.my
+<p>You should get responses like this (in red, if your terminal supports it):</p>
+<pre class="hljs"><code><div>vmX-gY.lab.workalaya.net | FAILED | rc=1 &gt;&gt;
+cat: /etc/shadow: Permission denied non-zero <span class="hljs-built_in">return</span> code
+
 </div></code></pre>
-<p>To make it easier, we have a local mirror on <a href="http://www.lab.workalaya.net/downloads/mibs/">http://www.lab.workalaya.net/downloads/mibs/</a></p>
-<p>we will update ansible playbook named <strong><em>snmp.yml</em></strong> to Download mib and update <em>/etc/snmp/snmp.conf</em> to include them as follows:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+<p>So really, we want to run this command as the &quot;root&quot; user. Try it:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m shell -a <span class="hljs-string">'cat /etc/shadow'</span> -u root
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">check</span> <span class="hljs-string">if</span> <span class="hljs-string">mibs</span> <span class="hljs-string">exists</span>
-<span class="hljs-attr">      stat:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">'/var/lib/snmp/mibs/cisco/<span class="hljs-template-variable">{{ item }}</span>'</span>
-<span class="hljs-attr">      register:</span> <span class="hljs-string">mib_files</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">if</span> <span class="hljs-string">mib</span> <span class="hljs-string">files</span> <span class="hljs-string">exist</span>
-<span class="hljs-attr">      set_fact:</span>
-<span class="hljs-attr">        mib_file_stat:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ mib_file_stat|default({}) | combine({item.item: item.stat.exists}) }}</span>"</span>
-<span class="hljs-attr">      with_items:</span> <span class="hljs-string">'<span class="hljs-template-variable">{{ mib_files.results }}</span>'</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Download</span> <span class="hljs-string">mibs</span>
-<span class="hljs-attr">      get_url:</span>
-<span class="hljs-attr">        url:</span> <span class="hljs-attr">http://www.lab.workalaya.net/downloads/mibs/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">mib_file_stat[item]</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span> <span class="hljs-string">file</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{item}}</span>"</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibdirs +/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibs +CISCO-ENVMON-MIB:CISCO-SMI"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
+<p>Did it work? If so, great! You can skip to the next section.</p>
+<p>If not: there is a workaround, because you can get ansible to use &quot;sudo&quot; on the remote system to get root. Try this:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m shell -a <span class="hljs-string">'cat /etc/shadow'</span> -bK
 </div></code></pre>
-<p>run ansible playbook as follows and should see similar output:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t mibs
+<p>Be careful of letter case in the flags: small &quot;b&quot; means use sudo, large &quot;K&quot; means prompt for the password which sudo requires.</p>
+<p>Did that work? If not, again ask for help.</p>
+<!--
+However this is still pretty inconvenient because we don't want to be prompted for a password every time we connect. Really we want to put our ssh public key in /root/.ssh/authorized_keys on every target system, so that we can login directly as the "root" user, bypassing sudo.
 
-PLAY [snmp_hosts] *********************************************************************************************
+You can do this by hand, but this is the sort of system administration task which ansible is perfectly suited for, so let's get ansible to make the change for us!
 
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
+First, we need to ensure the /root/.ssh directory exists, and create it if not. Run the following:
 
-TASK [Create /var/lib/snmp/mibs/cisco] ************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
+ansible all -m file -a 'path=/root/.ssh state=directory owner=root group=root mode=700' -bK
+This means:
 
-TASK [check <span class="hljs-keyword">if</span> mibs exists] ***********************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
+Connect to all hosts in the inventory module
+Run the file module
+With the given arguments: /root/.ssh should exist and should be a directory with the given permissions
+-sK (small s, large K) means to use sudo and prompt for password
+Did it complete successfully? This is an idempotent operation, so you can run it more than once and the subsequent runs won't change anything.
 
-TASK [Check <span class="hljs-keyword">if</span> mib files exist] *******************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-SMI.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-SMI.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
+Now we need to copy your public key across:
 
-TASK [Download mibs] ******************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
+ansible all -m copy -a 'src=/home/sysadm/.ssh/authorized_keys dest=/root/.ssh/authorized_keys owner=root group=root mode=644' -sK
+You are using a new module: the copy module copies a file from the local system (the one running ansible) to the remote system(s).
 
-TASK [update /etc/snmp/snmp.conf file] ************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibdirs +/var/lib/snmp/mibs/cisco)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibs +CISCO-ENVMON-MIB:CISCO-SMI)
+Finally, check you can login directly as "root":
 
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+ansible all -m shell -a 'cat /etc/shadow' -u root
+If this works, you have sorted out all your ansible authentication and are good to continue.
+-->
+<hr>
+<h2 id="5-further-steps"><strong>5. Further steps</strong></h2>
+<h3 id="5-1-inventory-variables"><strong>5. 1. Inventory variables</strong></h3>
+<p>It's still a bit inconvenient to have to type sudo password every time we connect, so let's make ansible remember that.</p>
+<p>Here's one way to do it. Edit the inventory file (remember it's <strong>~/ansible-playbook/inventory/hosts</strong>) and add a setting to every host like this:</p>
+<pre class="hljs"><code><div>vmX-gY ansible_ssh_user=lab ansible_become_pass=npNOG5nmm
 </div></code></pre>
-<p>Now, try again (the example uses rtr1-gY.lab.workalaya.net below. You can do this whichever network device you are configuring):</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
+<p>Now see that you can run commands as root without the sudo password prompt:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m shell -a <span class="hljs-string">'cat /etc/shadow'</span> -b
 </div></code></pre>
-<p>What do you notice ?</p>
-<h2 id="snmpwalk---the-rest-of-mib-ii"><strong>SNMPwalk - the rest of MIB-II</strong></h2>
-<p>Try and run snmpwalk on any hosts (routers and virtual machines) you have not tried yet, in the 100.68.Y.X network</p>
-<p>Note the kind of information you can obtain.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifDescr
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAlias
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifXTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifOperStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAdminStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 <span class="hljs-keyword">if</span>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git add .
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ git commit -am <span class="hljs-string">"updated inventory/host"</span>
 </div></code></pre>
-<p>(Remember that with <em>less</em> you press <strong><em>&lt;space&gt;</em></strong> for next page, <strong><em>b</em></strong> to go back to previous page, and <strong><em>q</em></strong> to quit)</p>
-<p>Can you see what's different between <strong><em>ifTable</em></strong> and <strong><em>ifXTable</em></strong>?</p>
-<p>What do you think might be the difference between <strong><em>ifOperStatus</em></strong> and <strong><em>ifAdminStatus</em></strong>? Can you imagine a scenario where this could be useful ?</p>
-<h2 id="more-mib-oid-fun"><strong>More MIB-OID fun</strong></h2>
-<p>Use SNMP to examine:</p>
-<ul>
-<li>the running processes on your neighbor's host (hrSWRun)</li>
-<li>the amount of free diskspace on your neighbor's host (hrStorage)</li>
-<li>the interfaces on your neighbor's host (ifIndex, ifDescr)</li>
-</ul>
-<p>Can you use short names to walk these OID tables ?</p>
-<ul>
-<li>Experiment with the &quot;snmptranslate&quot; command, example:</li>
-</ul>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmptranslate .1.3.6.1.4.1.9.9.13.1
+<h3 id="5-2-ansible-documentation"><strong>5. 2. Ansible documentation</strong></h3>
+<p>It's important to be able to locate the ansible documentation. You can find it at docs.ansible.com;</p>
+<p>Find your way to the Module Index and look for documentation for the &quot;file&quot; and &quot;copy&quot; modules which you have already used.</p>
+<p>You have now completed this exercise!</p>
+<hr>
+<h2 id="6-additional-information"><strong>6 Additional information</strong></h2>
+<p>THIS SECTION IS FOR INFORMATION ONLY - you don't need to do the following.</p>
+<h3 id="6-1-newer-versions-of-ansible"><strong>6. 1. Newer versions of ansible</strong></h3>
+<p>If you need upgrade or install newer version of ansilbe, do as follows:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ pip install --upgrade ansible
 </div></code></pre>
-<ul>
-<li>Try with various OIDs</li>
-</ul>
+<h3 id="6-2-password-authentication"><strong>6. 2. Password authentication</strong></h3>
+<p>It is possible to use ansible without ssh keys. This may be useful if you are unable to use keys in your environment for some reason.</p>
+<p>You need the -k flag to prompt for the password, and to install the sshpass helper program.</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m ping -k
+SSH password: &lt;<span class="hljs-built_in">type</span> the password here&gt;
+vmX-gY.lab.workalaya.net | FAILED! =&gt; {
+    <span class="hljs-string">"msg"</span>: <span class="hljs-string">"to use the 'ssh' connection type with passwords, you must install the sshpass program"</span>
+}
+
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ sudo apt-get install sshpass
+...
+(venv) vmX-gY@ansible-gY:~/ansible-playbook$ ansible all -m ping -k
+SSH password: &lt;<span class="hljs-built_in">type</span> the password here&gt;
+vmX-gY.lab.workalaya.net | SUCCESS =&gt; {
+    <span class="hljs-string">"ansible_facts"</span>: {
+        <span class="hljs-string">"discovered_interpreter_python"</span>: <span class="hljs-string">"/usr/bin/python3"</span>
+    },
+    <span class="hljs-string">"changed"</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-string">"ping"</span>: <span class="hljs-string">"pong"</span>
+}
+</div></code></pre>
+<p>You can also combine the sudo flags (so you get -bkK), and give -u <code>&lt;username&gt;</code> to give the username to login as, if this is not the same as the local user name.</p>
+<p>However this is inconvenient because every time you run ansible you need to provide the flags and the passwords. It is much better to set up SSH key authentication with agent forwarding, so that your user is able to login directly as &quot;root&quot; on the target systems.</p>
 <hr>
 
 </body>

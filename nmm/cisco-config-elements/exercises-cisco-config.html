@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>exercises-snmp.md</title>
+<title>exercises-cisco-config.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -421,647 +421,251 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
           : 'default'
     });
   </script>
-<h1 id="snmp-installation-and-configuration"><strong>SNMP Installation and Configuration</strong></h1>
+<h1 id="cisco-config-elements">Cisco Config Elements</h1>
 <h2 id="introduction"><strong>Introduction</strong></h2>
 <h3 id="goals"><strong>Goals</strong></h3>
 <ul>
-<li>Install and configure SNMP</li>
+<li>Learn the basic set of IOS commands required to enable SSH on your Cisco Switch or Router</li>
 </ul>
 <h3 id="notes"><strong>Notes</strong></h3>
 <ul>
-<li>Commands preceded with &quot;$&quot; imply that you should execute the command as a general user - not as root.</li>
+<li>Commands preceded with &quot;$&quot; imply that you should be working as a regular user.</li>
 <li>Commands preceded with &quot;#&quot; imply that you should be working as root.</li>
 <li>Commands with more specific command lines (e.g. &quot;rtrX&gt;&quot; or &quot;mysql&gt;&quot;) imply that you are executing commands on remote equipment, or within another program.</li>
 <li>If a command line ends with &quot;\&quot; this indicates that the command continues on the next line and you should treat this as a single line.</li>
-<li>References to &quot;Y&quot; represent your group number.</li>
+<li>References to &quot;N&quot; represent your group number.</li>
 </ul>
 <hr>
-<h2 id="installing-client-manager-tools"><strong>Installing client (manager) tools</strong></h2>
-<p>Start by installing the net-snmp tools on your individual host.</p>
-<p><strong>Log in to your shared workstation virtual machine as &quot;vmXgY&quot; user.</strong> (Replace X with vm no and Y with group no)</p>
-<p>Now we create new ansible-playbook file named <strong><em>snmp.yml</em></strong></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-</div></code></pre>
-<p>update inventory/hosts as following</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
-</div></code></pre>
-<pre class="hljs"><code><div>[nagios_hosts]
-vmX-gY.lab.workalaya.net
-
-[snmp_hosts]
-vmX-gY.lab.workalaya.net
-</div></code></pre>
-<p>Now run ansible playbook to install snmp client tools</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Now, in your home directory make a .snmp directory with file snmp.conf inside it, make it readable only by you, and add the credentials to it:</p>
-<p>You will perform this task using ansible.</p>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-</div></code></pre>
-<p>and create new file named snmp.conf inside file/snmp/</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/snmp
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/snmp/snmp.conf
-</div></code></pre>
-<p>Put the following contents in the file:</p>
-<pre class="hljs"><code><div>defVersion 3
-defSecurityLevel authNoPriv
-defSecurityName admin
-defAuthPassphrase NetManage
-defAuthType SHA
-defPrivType AES
-
-# Default community when using SNMP v2c
-defCommunity NetManage
-</div></code></pre>
-<p>Now run ansible playbook named <strong><em>snmp.yml</em></strong> again should see similar output</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp directory <span class="hljs-keyword">in</span> /home/lab/] *******************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp/snmp.conf] *********************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Creating this configuration file means you won't have to enter your credentials everytime you use one of the SNMP utilities. Otherwise you would have to add all these values on the command line like this:</p>
-<p>now log into your vm and try executing following command</p>
-<p>(this command will not yet work)</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v3 -l authNoPriv -a SHA -u admin -A NetManage vmX-gY
-</div></code></pre>
-<h2 id="configure-snmp-on-your-group-routers-and-switches"><strong>Configure SNMP on Your Group Routers and Switches</strong></h2>
-<p>For this exercise you need to work together as a group. You will be enabling and configuring snmp to run on each of your group network devices. This includes:</p>
+<h2 id="exercises-part-i"><strong>Exercises Part I</strong></h2>
+<h3 id="work-as-a-group"><strong>Work as a group</strong></h3>
+<p>Each group has 2 network devices:</p>
 <ul>
-<li>rtr1-gY.lab.workalaya.net</li>
+<li><strong>rtr1-gY.lab.workalaya.net</strong></li>
 </ul>
-<p>The commands to enable ssh are the same on each box, so divide the work between your group member:</p>
-<p>Now connect to your campus network devices and on each do:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
+<p>Each of these devices has the user <strong><em>lab</em></strong> configured with both a log in password and and enable password. At this time telnet is enabled on these devices and ssh is not yet configured.</p>
+<p>As a group you need to update all network devices so that when you finish this lab you can log in as the user <strong><em>lab</em></strong> only using ssh and with the password given in class.</p>
+<h3 id="connect-to-your-router"><strong>Connect to your router</strong></h3>
+<p>First, log in to your virtual machine (<strong>vmX-gY.lab.workalaya.net</strong>).</p>
+<p>Next, connect to the network device on which you will be working:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ telnet rtr1-gY.lab.workalaya.net
 
 username: lab
-password: &lt;CLASS PASSWORD&gt;
+password: &lt;GIVEN IN CLASS&gt;
+</div></code></pre>
+<p>Display information about your network device</p>
+<pre class="hljs"><code><div>rtr1-gY&gt; enable
+Password:                                 (password given in class)
+rtr1-gY# show run                         (space to continue)
+rtr1-gY# show int FastEthernet0/0         (or any other interface that is up)
+rtr1-gY# show ?                           (lists all options)
+</div></code></pre>
+<p><strong>Note:</strong> Press &quot;q&quot; to exit from information screen before reaching the end if you wish, otherwise press the <code>&lt;SPACE BAR&gt;</code> to move scroll through the information until the end.</p>
+<h3 id="configure-your-router-to-only-use-ssh"><strong>Configure your router to only use SSH</strong></h3>
+<p>These steps will do the following:</p>
+<ul>
+<li>Create an ssh key for your router</li>
+<li>Create an encrypted password for the user lab</li>
+<li>Encrypt the enable password</li>
+<li>Turn off telnet (unencrypted) access to your router</li>
+<li>Turn on SSH (version 2) access to your router</li>
+</ul>
+<p>You should be connected to your router and at the enable prompt. The prompt will look something like:</p>
+<pre class="hljs"><code><div>rtr1-gY#
+</div></code></pre>
+<p>At this prompt do the following:</p>
+<pre class="hljs"><code><div>rtr1-gY# configure terminal
+rtr1-gY(config)# aaa new-model
+rtr1-gY(config)# ip domain-name lab.workalaya.net
+rtr1-gY(config)# crypto key generate rsa
 
-rtr1-gY&gt; <span class="hljs-built_in">enable</span>
-Password: &lt;CLASS PASSWORD&gt;
-rtr1-gY<span class="hljs-comment"># configure terminal</span>
+Choose the size of the key modulus in the range of 360 to 4096 for your
+  General Purpose Keys. Choosing a key modulus greater than 512 may take
+  a few minutes.
+
+How many bits in the modulus [512]: 2048
+% Generating 2048 bit RSA keys, keys will be non-exportable...
+[OK] (elapsed time was 11 seconds)
 </div></code></pre>
-<p>Now we need to add an Access Control List rule for SNMP access, turn on SNMP, assign a read-only SNMP community string as well as a SNMPv3 group and user and tell the router to maintain SNMP information across reboots. To do this we do:</p>
-<p>(Note that &quot;Y&quot; is equal to your campus number)</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# snmp-server community NetManage ro 99
-rtr1-gY(config)# snmp-server group ReadGroup v3 auth access 99
-rtr1-gY(config)# access-list 99 permit 100.68.Y.1 0.0.0.0
-rtr1-gY(config)# access-list 99 permit 100.68.Y.16 0.0.0.15
-rtr1-gY(config)# access-list 99 permit 100.68.100.0 0.0.0.255
-rtr1-gY(config)# snmp-server user admin ReadGroup v3 auth sha NetManage
-rtr1-gY(config)# snmp-server ifindex persist
+<p>Wait for the key to generate. You can now specify passwords and they will be encrypted. First let's remove our lab user temporarily, then we'll recreate the user.</p>
+<p><strong>CRITICAL! CRITICAL! CRITICAL!</strong></p>
+<p>PLEASE DO NOT USE ANYTHING OTHER THAN THE CLASS PASSWORD AND THE USER &quot;<em><strong>lab</strong></em>&quot;</p>
+<p>If you use other usernames or passwords you will break exercises for other participants of the class during the week. Thank you!</p>
+<pre class="hljs"><code><div>rtr1-gY(config)# no username lab
+rtr1-gY(config)# username lab secret 0 &lt;CLASS PASSWORD&gt;
 </div></code></pre>
-<p>Now let's exit and save this new configuration to the routers permanent config.</p>
+<p>(First password used to log in on the router).</p>
+<p>The <strong><em>lab</em></strong> user's password (of <code>&lt;CLASS PASSWORD&gt;</code>) is encrypted. Next let's encrypt the enable password as well:</p>
+<pre class="hljs"><code><div>rtr1-g1(config)#no enable password
+rtr1-gY(config)# enable secret 0 &lt;CLASS ENABLE PASSWORD&gt;
+</div></code></pre>
+<p>(Password used after you type <code>enable</code> on the router command line.)</p>
+<p>Now we'll tell our router to only allow SSH connections on the 5 defined consoles (vty 0 through 4):</p>
+<pre class="hljs"><code><div>rtr1-gY(config)# line vty 0 4
+rtr1-gY(config-line)# transport input ssh
+rtr1-gY(config-line)# exit
+</div></code></pre>
+<p>This drops us out of the &quot;line&quot; configuration mode and back in to the general configuration mode. Now we'll tell the router to log SSH-related events and to only allow SSH version 2 connections:</p>
+<pre class="hljs"><code><div>rtr1-gY(config)# ip ssh logging events
+rtr1-gY(config)# ip ssh version 2
+</div></code></pre>
+<p>Now exit from configuration mode:</p>
 <pre class="hljs"><code><div>rtr1-gY(config)# exit
-rtr1-gY# write memory
-rtr1-gY# exit
 </div></code></pre>
-<p>If you have questions about what the access-list statement is restricting ask your instructors.</p>
-<h2 id="testing-snmp"><strong>Testing SNMP</strong></h2>
-<p>To check that your SNMP installation works, run the snmpstatus command on each of the following devices from your host:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus &lt;IP_ADDRESS&gt;
+<p>And, write these changes to the routers permament configuration:</p>
+<pre class="hljs"><code><div>rtr1-gY# write memory
 </div></code></pre>
-<p>Where is each of the following:</p>
-<pre class="hljs"><code><div>Group border router: 100.68.Y.1
+<p>Ok. That's it. You can no longer use telnet to connect to your router. You must connect using SSH with the user <strong><em>lab</em></strong> and password <code>&lt;CLASS PASSWORD&gt;</code>. The enable password is <code>&lt;CLASS ENABLE PASSWORD&gt;</code></p>
+<p>Naturally in a real-world situation you would use much more secure passwords.</p>
+<p>Before you exit your Telnet session be sure to test ssh connectivity from another PC in your group (or, open another terminal window). Do this in case you made a mistake to avoid locking yourself out of your router.</p>
+<p>First, try connection again with telnet from your virtual machine:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ telnet rtr1-gY.lab.workalaya.net
 </div></code></pre>
-<p><strong>Note</strong>: that you just used SNMPv3. Not all devices that implement SNMP support v3. Try again, adding &quot;-v2c&quot; as a parameter. Notice that the command automatically uses the community string in the snmp.conf file instead of the v3 user credentials. Try &quot;-v1&quot;. That is try:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c &lt;IP_ADDRESS&gt;
+<p>What happens? You should see something like:</p>
+<pre class="hljs"><code><div>Trying 100.68.100.1...  (<span class="hljs-keyword">for</span> example only)
+telnet: Unable to connect to remote host: Connection refused
 </div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v1 &lt;IP_ADDRESS&gt;
+<p>Now try connecting with SSH:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
 </div></code></pre>
-<p>What happens if you try using the wrong community string (i.e. change NetManage to something else) using the options &quot;-v2c -c NetWrong&quot;?</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c -c NetWrong &lt;IP_ADDRESS&gt;
+<p>You should see something looks similar to this:</p>
+<pre class="hljs"><code><div>The authenticity of host <span class="hljs-string">'rtr1-g1.lab.workalaya.net (100.68.100.1)'</span> can<span class="hljs-string">'t be established.
+RSA key fingerprint is SHA256:9HYY8A9aEJtQz7+Vn8MzFlomLCkUNtboEcQ8ms/BygM.
+Are you sure you want to continue connecting (yes/no)?
+</span></div></code></pre>
+<p>Enter in &quot;yes&quot; and press ENTER to continue...</p>
+<p>Now you'll see the follwoing:</p>
+<pre class="hljs"><code><div>Warning: Permanently added <span class="hljs-string">'rtr1-g1.lab.workalaya.net,100.68.100.1'</span> (RSA) to the list of known hosts.
+password:
 </div></code></pre>
-<h2 id="snmp-walk-and-oids"><strong>SNMP Walk and OIDs</strong></h2>
-<p>Now, you are going to use the <strong><em>snmpwalk</em></strong> command, part of the SNMP toolkit, to list the tables associated with the OIDs listed below, on each piece of equipment you tried above:</p>
-<pre class="hljs"><code><div>.1.3.6.1.2.1.2.2.1.2
-.1.3.6.1.2.1.31.1.1.1.18
-.1.3.6.1.4.1.9.9.13.1
-.1.3.6.1.2.1.25.2.3.1
-.1.3.6.1.2.1.25.4.2.1
+<p>Enter in the <code>&lt;CLASS PASSWORD&gt;</code></p>
+<p>You will end up on a prompt like:</p>
+<pre class="hljs"><code><div>rtr1-gY&gt;
 </div></code></pre>
-<p>You will try this with two forms of the <strong><em>snmpwalk</em></strong> command:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c &lt;IP_ADDRESS&gt; &lt;OID&gt;
+<p>(If you receive an error while trying to connect see the <em>Troubleshooting</em> Section below)</p>
+<p>Type &quot;enable&quot; to allow us to execute privileged commands:</p>
+<pre class="hljs"><code><div>rtr1-gY&gt; enable
+Password: &lt;CLASS ENABLE PASSWORD&gt;
+rtr1-gY#
 </div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c -On &lt;IP_ADDRESS&gt; &lt;OID&gt;
+<p>Now let's view the current router configuration:</p>
+<pre class="hljs"><code><div>rtr1-gY# show running
 </div></code></pre>
-<p>... where OID is one of the OIDs listed above: .1.3.6...</p>
-<p>...where IP_ADDRESS can be your group's router...</p>
-<p><strong>Note</strong>: the -On option turns on numerical output, i.e.: no translation of the OID &lt;-&gt; MIB object takes place.</p>
-<p>For these OIDs:</p>
+<p>Press the space bar to continue. Note some of the entries like:</p>
+<pre class="hljs"><code><div>enable secret 5 $1$wGtR$bKZqFAPXYjmV6OrLCC3hP.
+.
+.
+.
+username lab secret 5 $1$DQAd$qB0su4clCXPaSE7miLVcB0
+.
+.           (lots of lines down)
+.
+line vty 0 4
+ exec-timeout 0 0
+ transport preferred none
+ transport input ssh
+</div></code></pre>
+<p>You can see that both the enable password and the password for the user <strong><em>lab</em></strong> have been encrypted. This is a good thing.</p>
+<p>Now you should exit the router interface to complete this exercise:</p>
+<pre class="hljs"><code><div>rtr1-gY# exit
+</div></code></pre>
+<p>And, if you still have your older Telnet session in another window running be sure to exit from that as well.</p>
+<h3 id="troubleshooting"><strong>Troubleshooting</strong></h3>
+<h4 id="no-matching-key-exchange-method-found"><strong>&quot;no matching key exchange method found&quot;</strong></h4>
+<p>If you attempted to log in and received a message like this:</p>
+<pre class="hljs"><code><div>lab@vm1-g1:~$ ssh rtr1-g1.lab.workalaya.net
+Unable to negotiate with 100.68.100.1 port 22: no matching key exchange method found. Their offer: diffie-hellman-group1-sha1
+</div></code></pre>
+<p>The version of software on your network device is using older, weaker encryption ciphers. In order to support this there are a couple of options we can consider:</p>
+<p>You can override ssh refusing to connect to older, vulnerable encrption key exchange algorithm by running the ssh comand like this</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 lab@rtr1-gY.lab.workalaya.net
+</div></code></pre>
+<p>...but that is painful. Let's update your virtual machine's ssh client configuration to allow for this older key exchange. We'll do this by updating your machine's system-wide ssh-client configuration file. Follow these steps:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ sudo vi /etc/ssh/ssh_config
+</div></code></pre>
+<p>At the very end of the file add the following line:</p>
+<pre class="hljs"><code><div>KexAlgorithms +diffie-hellman-group1-sha1
+</div></code></pre>
+<p>Save the file and exit.</p>
+<p>Now try connecting to your network device again:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
+</div></code></pre>
+<h4 id="no-matching-cipher-found"><strong>&quot;no matching cipher found&quot;</strong></h4>
+<p>With newer versions of Ubuntu ssh you may get another error:</p>
+<pre class="hljs"><code><div>lab@vm1-g1:~$ ssh rtr1-g1.lab.workalaya.net
+Unable to negotiate with 100.68.100.1 port 22: no matching cipher found. Their offer: aes128-cbc,3des-cbc,aes192-cbc,aes256-cbc
+</div></code></pre>
+<p>Again, this is because the network device is using older ciphers which are not enabled by default in newer versions of OpenSSH.</p>
+<p>You can add <code>-oCiphers=+aes256-cbc</code> to the ssh command line, but it is simpler to edit the configuration file as follows:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ sudo vi /etc/ssh/ssh_config
+</div></code></pre>
+<p>At the very end of the file add this line:</p>
+<pre class="hljs"><code><div>Ciphers +aes256-cbc
+</div></code></pre>
+<p>Save the file and exit, then try connecting to your network device again:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
+</div></code></pre>
+<h3 id="notes"><strong>NOTES</strong></h3>
 <ol>
-<li>Do all the devices answer?</li>
-<li>Do you notice anything important about the OID on the output?</li>
+<li>If you are locked out of your router after this exercise let your instructor know and they can reset your network device's configuration back to its original state.</li>
+<li>Please only do this exercise once. If multiple people do this exercise it's very likely that access to the router will be broken.</li>
+<li>During the week you will configure items such as SNMP, Netflow and more on your local network devices. From now on you can simply connect to the device directly from your laptop or desktop machine using SSH.</li>
 </ol>
-<h2 id="configuration-of-snmpd-on-your-host-vmx-gylabworkalayanet"><strong>Configuration of snmpd on your host (vmX-gY.lab.workalaya.net)</strong></h2>
-<p>For this exercise your group needs to verify that the snmpd service is running and responding to queries for all machines in your group. First enable snmpd on your machine, then test if your machine is responding, then check each machine of your other group members.</p>
-<ul>
-<li>Install the SNMP agent (daemon) on your host</li>
-</ul>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+<hr>
+<h2 id="exercises---part-2-ntp-configuration"><strong>Exercises - Part 2: NTP Configuration</strong></h2>
+<h3 id="configure-ntp-and-timezone"><strong>Configure NTP and Timezone</strong></h3>
+<p>Perhaps you can select another person in your group to execute the following steps to allow them to practice.</p>
+<p>Your first step is to connect to your router:</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd-server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
+<p>Now we will enable the Network Time Protocol so that we can synchronize your router's time with your PCs time so that all devices on our local network will have the same time. To do this follow these steps:</p>
+<pre class="hljs"><code><div>rtr1-gY&gt; enable
+Password:
+rtr1-gY# configure terminal
+rtr1-gY(config)# ip name-server 100.68.100.244 100.68.100.245 100.68.100.254
+rtr1-gY(config)# ip domain-lookup
+rtr1-gY(config)# ntp server pool.ntp.org
 </div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+<p>At this point you may see something like this:</p>
+<pre class="hljs"><code><div>rtr1-gY(config)#ntp server pool.ntp.org
+Translating &quot;pool.ntp.org&quot;...domain server (100.68.100.244) [OK]
 </div></code></pre>
-<ul>
-<li>Configuration</li>
-</ul>
-<p>We will create our own &quot;snmpd.conf&quot; template file and not &quot;snmp.conf&quot; and update ansible playbook named <strong><em>snmp.yml</em></strong> file</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p templates/snmpd
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/snmpd/snmpd.conf
+<p>Wait a few moments for this to complete and then you can continue.</p>
+<pre class="hljs"><code><div>rtr1-gY(config)# no clock timezone
+rtr1-gY(config)# exit
+rtr1-gY# write memory
 </div></code></pre>
-<p>Then, copy/paste the following (change vmX-gY to your own host and campus number) and replace &quot;Y&quot; with your campus number:</p>
-<pre class="hljs"><code><div>#  Listen for connections on all interfaces (both IPv4 *and* IPv6)
-agentAddress udp:161,udp6:161
-
-# For SNMPv2: Configure Read-Only community and restrict who can connect
-rocommunity NetManage 100.68.100.0/24
-rocommunity NetManage 100.68.{{class_group}}.16/28
-rocommunity NetManage 100.68.{{class_group}}.254/32
-rocommunity NetManage 127.0.0.1
-rocommunity6 NetManage ::1
-
-# Information about this host
-sysLocation    NPIX Network Management Workshop
-sysContact     lab@{{inventory_hostname}}
-
-# Which OSI layers are active in this host
-# (Application + End-to-End layers)
-sysServices    72
-
-# Include proprietary dskTable MIB (in addition to hrStorageTable)
-includeAllDisks  10%
-
-createUser admin SHA &quot;NetManage&quot; AES
-rwuser admin
+<p>This uses the NTP time servers run by ntp.org and should end up selecting machines that are geographically near to you. This, also, indicates that you wish to use UTC time (same as GMT time) for this router.</p>
+<p>To verify NTP status, NTP server associations and the reported time on your router:</p>
+<pre class="hljs"><code><div>rtr1-gY# show ntp status
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
+<p>After some time you will see something like (you may see &quot;unsynchronized&quot; for a while):</p>
+<pre class="hljs"><code><div>rtr1-gY#show ntp status
+Clock is synchronized, stratum 5, reference is 100.68.100.254
+nominal freq is 250.0000 Hz, actual freq is 250.0000 Hz, precision is 2**18
+ntp uptime is 6500 (1/100 of seconds), resolution is 4000
+reference time is E15D430E.3382AA55 (09:46:54.201 UTC Fri Oct 25 2019)
+clock offset is 42.6024 msec, root delay is 413.38 msec
+root dispersion is 4204.22 msec, peer dispersion is 187.56 msec
+loopfilter state is 'CTRL' (Normal Controlled Loop), drift is 0.000000000 s/s
+system poll interval is 64, last update was 63 sec ago.
 </div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
+<p>... and to see the NTP server associations:</p>
+<pre class="hljs"><code><div>rtr1-gY# show ntp associations
 
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-TASK [Update /etc/snmp/snmpd.conf] ****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-RUNNING HANDLER [restart snmpd] *******************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+  address         ref clock       st   when   poll reach  delay  offset   disp
+*~100.68.100.254  130.54.208.201   4     32     64     7  4.000  42.602  1.883
+ * sys.peer, # selected, + candidate, - outlyer, x falseticker, ~ configured
 </div></code></pre>
-<h2 id="check-that-snmpd-is-working"><strong>Check that snmpd is working:</strong></h2>
-<p>log into your vm and run following command</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus localhost
+<p>... and, finally, to see your router's current time:</p>
+<pre class="hljs"><code><div>rtr1-gY# show clock
 </div></code></pre>
-<h2 id="test-your-neighbors"><strong>Test your neighbors</strong></h2>
-<p>Check now that you can run snmpstatus against your other group members host.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus vm[1..3]-gY.lab.workalaya.net
+<p>You should see something like:</p>
+<pre class="hljs"><code><div>09:51:10.432 UTC Fri Oct 25 2019
 </div></code></pre>
-<p>For instance, in group 5, you should verify against:</p>
-<ul>
-<li>vm1-g5.lab.workalaya.net</li>
-<li>vm2-g5.lab.workalaya.net</li>
-<li>vm3-g5.lab.workalaya.net
-and, so on.</li>
-</ul>
-<h2 id="configuration-of-snmpd-on-your-srv1-gylabworkalayanet-server"><strong>Configuration of snmpd on your srv1-gY.lab.workalaya.net server</strong></h2>
-<p>You may want to install the snmp daemon on your campus server at this time. If so, select someone from your group to do this. If not, it will be configured during a later exercise.</p>
-<p>(follow the same process as of configuring your own VM)</p>
-<h2 id="adding-mibs"><strong>Adding MIBs</strong></h2>
-<p>Remember when you ran:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
+<p>Now you can exit from your router:</p>
+<pre class="hljs"><code><div>rtr1-gY# exit
 </div></code></pre>
-<p>If you noticed, the SNMP client (snmpwalk) couldn't interpret all the OIDs coming back from the Agent:</p>
-<pre class="hljs"><code><div>SNMPv2-SMI::enterprises.9.9.13.1.3.1.2.1 = STRING: &quot;chassis&quot;
-SNMPv2-SMI::enterprises.9.9.13.1.3.1.6.1 = INTEGER: 1
-</div></code></pre>
-<p>What is <em>9.9.13.1.3.1</em> ?</p>
-<p>To be able to interpret this information, we need to download extra MIBs:</p>
-<p>We will use the following MIBs (Don't download them yet!):</p>
-<h3 id="cisco-mibs"><strong>CISCO MIBS</strong></h3>
-<pre class="hljs"><code><div>ftp://ftp.cisco.com/pub/mibs/v2/CISCO-SMI.my
-ftp://ftp.cisco.com/pub/mibs/v2/CISCO-ENVMON-MIB.my
-</div></code></pre>
-<p>To make it easier, we have a local mirror on <a href="http://www.lab.workalaya.net/downloads/mibs/">http://www.lab.workalaya.net/downloads/mibs/</a></p>
-<p>we will update ansible playbook named <strong><em>snmp.yml</em></strong> to Download mib and update <em>/etc/snmp/snmp.conf</em> to include them as follows:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">check</span> <span class="hljs-string">if</span> <span class="hljs-string">mibs</span> <span class="hljs-string">exists</span>
-<span class="hljs-attr">      stat:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">'/var/lib/snmp/mibs/cisco/<span class="hljs-template-variable">{{ item }}</span>'</span>
-<span class="hljs-attr">      register:</span> <span class="hljs-string">mib_files</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">if</span> <span class="hljs-string">mib</span> <span class="hljs-string">files</span> <span class="hljs-string">exist</span>
-<span class="hljs-attr">      set_fact:</span>
-<span class="hljs-attr">        mib_file_stat:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ mib_file_stat|default({}) | combine({item.item: item.stat.exists}) }}</span>"</span>
-<span class="hljs-attr">      with_items:</span> <span class="hljs-string">'<span class="hljs-template-variable">{{ mib_files.results }}</span>'</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Download</span> <span class="hljs-string">mibs</span>
-<span class="hljs-attr">      get_url:</span>
-<span class="hljs-attr">        url:</span> <span class="hljs-attr">http://www.lab.workalaya.net/downloads/mibs/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">mib_file_stat[item]</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span> <span class="hljs-string">file</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{item}}</span>"</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibdirs +/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibs +CISCO-ENVMON-MIB:CISCO-SMI"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
-</div></code></pre>
-<p>run ansible playbook as follows and should see similar output:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t mibs
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [Create /var/lib/snmp/mibs/cisco] ************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [check <span class="hljs-keyword">if</span> mibs exists] ***********************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
-
-TASK [Check <span class="hljs-keyword">if</span> mib files exist] *******************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-SMI.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-SMI.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
-
-TASK [Download mibs] ******************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
-
-TASK [update /etc/snmp/snmp.conf file] ************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibdirs +/var/lib/snmp/mibs/cisco)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibs +CISCO-ENVMON-MIB:CISCO-SMI)
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Now, try again (the example uses rtr1-gY.lab.workalaya.net below. You can do this whichever network device you are configuring):</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
-</div></code></pre>
-<p>What do you notice ?</p>
-<h2 id="snmpwalk---the-rest-of-mib-ii"><strong>SNMPwalk - the rest of MIB-II</strong></h2>
-<p>Try and run snmpwalk on any hosts (routers and virtual machines) you have not tried yet, in the 100.68.Y.X network</p>
-<p>Note the kind of information you can obtain.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifDescr
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAlias
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifXTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifOperStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAdminStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 <span class="hljs-keyword">if</span>
-</div></code></pre>
-<p>(Remember that with <em>less</em> you press <strong><em>&lt;space&gt;</em></strong> for next page, <strong><em>b</em></strong> to go back to previous page, and <strong><em>q</em></strong> to quit)</p>
-<p>Can you see what's different between <strong><em>ifTable</em></strong> and <strong><em>ifXTable</em></strong>?</p>
-<p>What do you think might be the difference between <strong><em>ifOperStatus</em></strong> and <strong><em>ifAdminStatus</em></strong>? Can you imagine a scenario where this could be useful ?</p>
-<h2 id="more-mib-oid-fun"><strong>More MIB-OID fun</strong></h2>
-<p>Use SNMP to examine:</p>
-<ul>
-<li>the running processes on your neighbor's host (hrSWRun)</li>
-<li>the amount of free diskspace on your neighbor's host (hrStorage)</li>
-<li>the interfaces on your neighbor's host (ifIndex, ifDescr)</li>
-</ul>
-<p>Can you use short names to walk these OID tables ?</p>
-<ul>
-<li>Experiment with the &quot;snmptranslate&quot; command, example:</li>
-</ul>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmptranslate .1.3.6.1.4.1.9.9.13.1
-</div></code></pre>
-<ul>
-<li>Try with various OIDs</li>
-</ul>
+<p>Make sure your team finishes working on the other devices in your group. If anyone has problems connecting to a device see the <strong><em>Troubleshooting</em></strong> section above.</p>
 <hr>
 
 </body>

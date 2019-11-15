@@ -1,7 +1,6 @@
-#*.html
 *.md
 .jekyll-cache/
 Gemfile
 Gemfile.lock
 _site/
-
+.DS_Store

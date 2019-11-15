@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>welcome-nmm</title>
+  <style>
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="network-monitoring-management-and-automation">Network Monitoring, Management and Automation</h1>
+<h2 id="welcome">Welcome</h2>
+<h3 id="network-startup-resource-center">Network Startup Resource Center</h3>
+<h3 id="httpwww.nsrc.org">http://www.nsrc.org</h3>
+<pre><code>These materials are licensed under the Creative Commons Attribution-NonCommercial 4.0 International license(http://creativecommons.org/licenses/by-nc/4.0/)</code></pre>
+<div class="page"/>
+
+
+<h2 id="workshop-schedule">Workshop Schedule</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Schedule</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Session 1</td>
+<td>09:30 - 11:00</td>
+</tr>
+<tr class="even">
+<td>Break</td>
+<td>11:00 - 11:30</td>
+</tr>
+<tr class="odd">
+<td>Session 2</td>
+<td>11:30 - 13:00</td>
+</tr>
+<tr class="even">
+<td>Lunch</td>
+<td>13:00 - 14:00</td>
+</tr>
+<tr class="odd">
+<td>Session 3</td>
+<td>14:00 - 15:30</td>
+</tr>
+<tr class="even">
+<td>Break</td>
+<td>15:30 - 16:00</td>
+</tr>
+<tr class="odd">
+<td>Session 4</td>
+<td>16:00 - 17:30</td>
+</tr>
+</tbody>
+</table>
+<h2 id="workshop-instructors">Workshop Instructors</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Email</th>
+<th>Organization</th>
+<th>Country</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Chatur Ratna Shakya</td>
+<td>chatur(at)pch(dot)net</td>
+<td>[PCH][1]</td>
+<td>Nepal</td>
+</tr>
+<tr class="even">
+<td>Dibya Khatiwada</td>
+<td>dibya(at)pch(dot)net</td>
+<td>[PCH][1]</td>
+<td>Nepal</td>
+</tr>
+<tr class="odd">
+<td>Srijan Bhuju</td>
+<td>srijan(at)wlink(dot)com(dot)np</td>
+<td>[Worldlink][2]</td>
+<td>Nepal</td>
+</tr>
+<tr class="even">
+<td>Ritesh Adhikari</td>
+<td>ritesh(at)workalaya(dot)com</td>
+<td>[Workalaya][3]</td>
+<td>Nepal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="student-introductions">Student Introductions</h2>
+<h2 id="workshop-agenda">Workshop Agenda</h2>
+<pre><code>Show Briefing Slides
+Show Wiki</code></pre>
+<h2 id="administrative-items">Administrative Items</h2>
+<h4 id="agenda">Agenda</h4>
+<pre><code>- http://www.lab.workalaya.net/</code></pre>
+<h4 id="during-the-course">During the course</h4>
+<pre><code>- Please ask questions as you have them.
+- Your experiences are valuable. Please share them.
+- The schedule is somewhat flexible.</code></pre>
+<h4 id="course-materials">Course Materials</h4>
+<pre><code>- http://www.lab.workalaya.net/
+- Will be available permanently here:
+- http://www.lab.workalaya.net</code></pre>
+<h2 id="virtual-machine-access">Virtual Machine Access</h2>
+<ul>
+<li>There are 36 Virtual Machines:</li>
+</ul>
+<pre><code>vmX-gY.lab.workalaya.net</code></pre>
+<ul>
+<li>Each virtual machine has two users:
+<ul>
+<li>General user: <em>lab</em></li>
+<li>Administrative user: <em>root</em></li>
+</ul></li>
+<li>Password for <em>lab</em> is written on the board</li>
+</ul>
+<h2 id="network-diagram">Network Diagram</h2>
+<h2 id="overview">Overview</h2>
+<h2 id="network-diagram-1">Network Diagram</h2>
+<h2 id="single-campus-detail">Single Campus Detail</h2>
+<h5 id="transit-routers-that-serve-odd-and-even-groups"> 2 transit routers that serve odd and even groups</h5>
+<h5 id="border-routers-bdr-x-.campus-y"> 6 border routers (bdr X .campus Y )</h5>
+<h5 id="core-layer-3-switches-core-x-.campus-y"> 6 core layer 3 switches (core X .campus Y )</h5>
+<h5 id="building-switches-2-buildings-per-campus"> 12 building switches (2 buildings per campus)</h5>
+<pre><code>- No edge switches
+- ```
+#####  42 virtual servers
+</code></pre>
+<ul>
+<li>1 server per user (vmX-gY)</li>
+<li>1 shared server per group (srv1-gY)</li>
+<li>1 shared controller server per group (ansible-host-gY) ```</li>
+</ul>
+<h6 id="you-will-work-in-groups-of-3-6-on-some-exercises">1. You will work in groups of 3-6 on some exercises</h6>
+<h6 id="please-choose-your-location-for-the-week-now">2. Please choose your location for the week now</h6>
+<h6 id="you-will-use-your-groups-virtual-machines-all-week">3. You will use your group’s virtual machines all week</h6>
+<h2 id="we-will-assign-pcs-groups-now">We will assign PCs &amp; Groups Now</h2>
+<h3 id="please-ask-questions-at-any-time">Please Ask Questions At Any Time!</h3>
+<h2 id="questions">Questions</h2>
+</body>
+</html>

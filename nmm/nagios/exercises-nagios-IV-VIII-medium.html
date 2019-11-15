@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>exercises-snmp.md</title>
+<title>exercises-nagios-IV-VIII-medium.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -421,11 +421,11 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
           : 'default'
     });
   </script>
-<h1 id="snmp-installation-and-configuration"><strong>SNMP Installation and Configuration</strong></h1>
+<h1 id="nagios-installation-and-configuration"><strong>Nagios Installation and Configuration</strong></h1>
 <h2 id="introduction"><strong>Introduction</strong></h2>
 <h3 id="goals"><strong>Goals</strong></h3>
 <ul>
-<li>Install and configure SNMP</li>
+<li>Install and configure Nagios</li>
 </ul>
 <h3 id="notes"><strong>Notes</strong></h3>
 <ul>
@@ -433,635 +433,525 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
 <li>Commands preceded with &quot;#&quot; imply that you should be working as root.</li>
 <li>Commands with more specific command lines (e.g. &quot;rtrX&gt;&quot; or &quot;mysql&gt;&quot;) imply that you are executing commands on remote equipment, or within another program.</li>
 <li>If a command line ends with &quot;\&quot; this indicates that the command continues on the next line and you should treat this as a single line.</li>
-<li>References to &quot;Y&quot; represent your group number.</li>
+<li>References to &quot;N&quot; represent your group number.</li>
 </ul>
 <hr>
-<h2 id="installing-client-manager-tools"><strong>Installing client (manager) tools</strong></h2>
-<p>Start by installing the net-snmp tools on your individual host.</p>
-<p><strong>Log in to your shared workstation virtual machine as &quot;vmXgY&quot; user.</strong> (Replace X with vm no and Y with group no)</p>
-<p>Now we create new ansible-playbook file named <strong><em>snmp.yml</em></strong></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+<h2 id="exercises"><strong>Exercises</strong></h2>
+<h2 id="part-iv"><strong>Part IV</strong></h2>
+<h3 id="adding-parent-relationships"><strong>Adding Parent Relationships</strong></h3>
+<p>If you look at the Nagios interface for your server and select Status Maps you will see your group servers and devices centered around your Nagios instance. In order for Nagios to work efficiently you need to include parent relationships for each device defined.</p>
+<p>Go to <a href="http://vmX-gY.lab.workalaya.net/nagios3">http://vmX-gY.lab.workalaya.net/nagios3</a> and click on the &quot;Map&quot; link.</p>
+<p>Now we will add parent relationships for router, switch and server.</p>
+<p>Adding Parents to <strong><em>templates/nagios/routers.cfg</em></strong> as</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/routers.cfg
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<pre class="hljs"><code><div>define hostgroup {
+    hostgroup_name routers
+    alias          Router Group
+}
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+define host {
+    use         generic-host
+    host_name   gw-rtr
+    alias       LAB Transit Provider Router
+    address     gw-rtr.lab.workalaya.net
+    hostgroups   routers,ssh-servers
+}
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+define host {
+    use         generic-host
+    host_name   rtr1-g{{class_group}}
+    alias       Group {{class_group}} Router
+    address     rtr1-g{{class_group}}.lab.workalaya.net
+    hostgroups routers,ssh-servers
+    parents     gw-rtr
+}
 </div></code></pre>
-<p>update inventory/hosts as following</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
+<p>and Adding Parents to <strong><em>templates/nagios/vms.cfg</em></strong> as</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/vmss.cfg
 </div></code></pre>
-<pre class="hljs"><code><div>[nagios_hosts]
-vmX-gY.lab.workalaya.net
+<pre class="hljs"><code><div>define hostgroup {
+    hostgroup_name vms
+    alias          VM Group
+}
 
-[snmp_hosts]
-vmX-gY.lab.workalaya.net
+define host {
+    use         generic-host
+    host_name   srv1-g{{class_group}}
+    alias       Server, Group {{class_group}}
+    address     srv1-g{{class_group}}.lab.workalaya.net
+    hostgroups  vms,ssh-servers,http-servers,ubuntu-servers
+    parents     rtr1-g{{class_group}}
+}
+
+{% for i in range(1,4) %}
+define host {
+    use         generic-host
+    host_name   vm{{i}}-g{{class_group}}
+    alias       VM {{i}}, Group {{class_group}}
+    address     vm{{i}}-g{{class_group}}.lab.workalaya.net
+    hostgroups  vms,ssh-servers,http-servers,ubuntu-servers
+    parents     rtr1-g{{class_group}}
+}
+{% endfor %}
 </div></code></pre>
-<p>Now run ansible playbook to install snmp client tools</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
+<p>and push config to nagios host</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook nagios.yml -t update_config
 
-PLAY [snmp_hosts] *********************************************************************************************
+PLAY [nagios_hosts] ************************************************************
 
-TASK [Gathering Facts] ****************************************************************************************
+TASK [Gathering Facts] *********************************************************
 ok: [vmX-gY.lab.workalaya.com]
 
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
+TASK [Generate the nagios monitoring templates] ********************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=routers.cfg)
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=vms.cfg)
 
+RUNNING HANDLER [verify config] ************************************************
 changed: [vmX-gY.lab.workalaya.com]
 
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
+RUNNING HANDLER [restart nagios3] **********************************************
 changed: [vmX-gY.lab.workalaya.com]
 
-PLAY RECAP ****************************************************************************************************
+PLAY RECAP *********************************************************************
 vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 </div></code></pre>
-<p>Now, in your home directory make a .snmp directory with file snmp.conf inside it, make it readable only by you, and add the credentials to it:</p>
-<p>You will perform this task using ansible.</p>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
+<hr>
+<h2 id="part-v"><strong>Part V</strong></h2>
+<h3 id="extended-host-information-making-your-graphs-pretty"><strong>Extended Host Information (&quot;making your graphs pretty&quot;)</strong></h3>
+<p>If you would like to use appropriate icons for your defined hosts in Nagios this is where you do this. We have the two types of devices:</p>
+<ul>
+<li>Cisco routers</li>
+<li>Ubuntu servers vms</li>
+</ul>
+<p>There is a fairly large repository of icon images available for you to use located here:</p>
+<pre class="hljs"><code><div>/usr/share/nagios/htdocs/images/logos/
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
+<p>these were installed by default as dependent packages of the nagios3 package in Ubuntu. In some cases you can find model-specific icons for your hardware, but to make things simpler we will use the following icons for our hardware:</p>
+<pre class="hljs"><code><div>/usr/share/nagios/htodcs/images/logos/base/debian.*
+/usr/share/nagios/htdocs/images/logos/cook/router.*
+/usr/share/nagios/htdocs/images/logos/cook/switch.*
+</div></code></pre>
+<p>The next step is to edit the file <strong><em>templates/nagios/vms.cfg</em></strong>  and tell nagios what image you would like to use to represent your devices.</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/routers.cfg
+</div></code></pre>
+<p>Here is what an entry for your routers looks like (there is already an entry for debian-servers that will work as is). Note that the router model (3600) is not all that important. The image used represents a router in general.</p>
+<pre class="hljs"><code><div>define hostgroup {
+    hostgroup_name routers
+    alias          Router Group
+}
+
+define hostextinfo {
+    hostgroup_name   routers
+    icon_image       cook/router.png
+    icon_image_alt   Cisco Routers (7200)
+    vrml_image       router.png
+    statusmap_image  cook/router.gd2
+}
+
+define host {
+    use         generic-host
+    host_name   gw-rtr
+    alias       LAB Transit Provider Router
+    address     gw-rtr.lab.workalaya.net
+    hostgroups   routers,ssh-servers
+}
+
+define host {
+    use         generic-host
+    host_name   rtr1-g{{class_group}}
+    alias       Group {{class_group}} Router
+    address     rtr1-g{{class_group}}.lab.workalaya.net
+    hostgroups routers,ssh-servers
+    parents     gw-rtr
+}
+</div></code></pre>
+<p>and push config to nagios host</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook nagios.yml -t update_config
+
+PLAY [nagios_hosts] ************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [vmX-gY.lab.workalaya.com]
+
+TASK [Generate the nagios monitoring templates] ********************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=routers.cfg)
+ok: [vmX-gY.lab.workalaya.com] =&gt; (item=vms.cfg)
+
+RUNNING HANDLER [verify config] ************************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+RUNNING HANDLER [restart nagios3] **********************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+PLAY RECAP *********************************************************************
+vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
+<p>Take a look at the Status Map in the web interface (Map link on the left). It should be much nicer, with real icons instead of question marks for most items.</p>
+<hr>
+<h2 id="part-vi"><strong>Part VI</strong></h2>
+<h3 id="create-service-groups"><strong>Create Service Groups</strong></h3>
+<h4 id="create-service-groups-for-ssh-and-http-for-your-group-servers"><strong>Create service groups for ssh and http for your group servers.</strong></h4>
+<p>The idea is to create service groups for your 4 group servers. Servicegroups consider the service defined by the combined services to be down if any of the services in a group are down.</p>
+<p>In this case we'll group together ssh and http. In real life you might do msyql, imap, smtp, http and your mta (postfix, mail, exim) if those were services required to deliver a mail interface to your users.</p>
+<p>We start by editing the file:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/servicegroups.cfg
+</div></code></pre>
+<p>For group 1 this service group would look like:</p>
+<pre class="hljs"><code><div>define servicegroup {
+    servicegroup_name   group{{class_group}}-ssh-http
+    alias               Group {{class_group}} SSH and Web
+    members             vm1-g{{class_group}},SSH,vm1-g{{class_group}},HTTP,vm2-g{{class_group}},SSH,vm2-g{{class_group}},HTTP, \
+                        vm3-g{{class_group}},SSH,vm3-g{{class_group}},HTTP,srv1-g{{class_group}},SSH,srv1-g{{class_group}},HTTP
+}
+</div></code></pre>
+<p>We used &quot;\&quot; to indicate a new line. Without this you will see errors.</p>
+<p>Note that &quot;SSH&quot; and &quot;HTTP&quot; need to be uppercase as this is how the service_description is written in the file /etc/nagios3/conf.d/services_nagios2.cfg</p>
+<p>update ansible playbook named <strong><em>nagios.yml</em></strong> to include <strong><em>servicegroups.cfg</em></strong> as</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi nagios.yml
+</div></code></pre>
+<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">nagios_hosts</span>
 <span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
 <span class="hljs-attr">  tasks:</span>
 <span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
 <span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">Nagios</span> <span class="hljs-string">Version</span> <span class="hljs-number">3</span>
 <span class="hljs-attr">      package:</span>
 <span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
 <span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
 <span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">nagios3</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">nagios3-doc</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-</div></code></pre>
-<p>and create new file named snmp.conf inside file/snmp/</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/snmp
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/snmp/snmp.conf
-</div></code></pre>
-<p>Put the following contents in the file:</p>
-<pre class="hljs"><code><div>defVersion 3
-defSecurityLevel authNoPriv
-defSecurityName admin
-defAuthPassphrase NetManage
-defAuthType SHA
-defPrivType AES
-
-# Default community when using SNMP v2c
-defCommunity NetManage
-</div></code></pre>
-<p>Now run ansible playbook named <strong><em>snmp.yml</em></strong> again should see similar output</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmp tools] *************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmp-mibs-downloader)
-
-TASK [Update /etc/snmp/snmp.conf] *****************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp directory <span class="hljs-keyword">in</span> /home/lab/] *******************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-TASK [Create .snmp/snmp.conf] *********************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<p>Creating this configuration file means you won't have to enter your credentials everytime you use one of the SNMP utilities. Otherwise you would have to add all these values on the command line like this:</p>
-<p>now log into your vm and try executing following command</p>
-<p>(this command will not yet work)</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v3 -l authNoPriv -a SHA -u admin -A NetManage vmX-gY
-</div></code></pre>
-<h2 id="configure-snmp-on-your-group-routers-and-switches"><strong>Configure SNMP on Your Group Routers and Switches</strong></h2>
-<p>For this exercise you need to work together as a group. You will be enabling and configuring snmp to run on each of your group network devices. This includes:</p>
-<ul>
-<li>rtr1-gY.lab.workalaya.net</li>
-</ul>
-<p>The commands to enable ssh are the same on each box, so divide the work between your group member:</p>
-<p>Now connect to your campus network devices and on each do:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
-
-username: lab
-password: &lt;CLASS PASSWORD&gt;
-
-rtr1-gY&gt; <span class="hljs-built_in">enable</span>
-Password: &lt;CLASS PASSWORD&gt;
-rtr1-gY<span class="hljs-comment"># configure terminal</span>
-</div></code></pre>
-<p>Now we need to add an Access Control List rule for SNMP access, turn on SNMP, assign a read-only SNMP community string as well as a SNMPv3 group and user and tell the router to maintain SNMP information across reboots. To do this we do:</p>
-<p>(Note that &quot;Y&quot; is equal to your campus number)</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# snmp-server community NetManage ro 99
-rtr1-gY(config)# snmp-server group ReadGroup v3 auth access 99
-rtr1-gY(config)# access-list 99 permit 100.68.Y.1 0.0.0.0
-rtr1-gY(config)# access-list 99 permit 100.68.Y.16 0.0.0.15
-rtr1-gY(config)# access-list 99 permit 100.68.100.0 0.0.0.255
-rtr1-gY(config)# snmp-server user admin ReadGroup v3 auth sha NetManage
-rtr1-gY(config)# snmp-server ifindex persist
-</div></code></pre>
-<p>Now let's exit and save this new configuration to the routers permanent config.</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# exit
-rtr1-gY# write memory
-rtr1-gY# exit
-</div></code></pre>
-<p>If you have questions about what the access-list statement is restricting ask your instructors.</p>
-<h2 id="testing-snmp"><strong>Testing SNMP</strong></h2>
-<p>To check that your SNMP installation works, run the snmpstatus command on each of the following devices from your host:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>Where is each of the following:</p>
-<pre class="hljs"><code><div>Group border router: 100.68.Y.1
-</div></code></pre>
-<p><strong>Note</strong>: that you just used SNMPv3. Not all devices that implement SNMP support v3. Try again, adding &quot;-v2c&quot; as a parameter. Notice that the command automatically uses the community string in the snmp.conf file instead of the v3 user credentials. Try &quot;-v1&quot;. That is try:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v1 &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<p>What happens if you try using the wrong community string (i.e. change NetManage to something else) using the options &quot;-v2c -c NetWrong&quot;?</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus -v2c -c NetWrong &lt;IP_ADDRESS&gt;
-</div></code></pre>
-<h2 id="snmp-walk-and-oids"><strong>SNMP Walk and OIDs</strong></h2>
-<p>Now, you are going to use the <strong><em>snmpwalk</em></strong> command, part of the SNMP toolkit, to list the tables associated with the OIDs listed below, on each piece of equipment you tried above:</p>
-<pre class="hljs"><code><div>.1.3.6.1.2.1.2.2.1.2
-.1.3.6.1.2.1.31.1.1.1.18
-.1.3.6.1.4.1.9.9.13.1
-.1.3.6.1.2.1.25.2.3.1
-.1.3.6.1.2.1.25.4.2.1
-</div></code></pre>
-<p>You will try this with two forms of the <strong><em>snmpwalk</em></strong> command:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c &lt;IP_ADDRESS&gt; &lt;OID&gt;
-</div></code></pre>
-<p>and</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk -v2c -On &lt;IP_ADDRESS&gt; &lt;OID&gt;
-</div></code></pre>
-<p>... where OID is one of the OIDs listed above: .1.3.6...</p>
-<p>...where IP_ADDRESS can be your group's router...</p>
-<p><strong>Note</strong>: the -On option turns on numerical output, i.e.: no translation of the OID &lt;-&gt; MIB object takes place.</p>
-<p>For these OIDs:</p>
-<ol>
-<li>Do all the devices answer?</li>
-<li>Do you notice anything important about the OID on the output?</li>
-</ol>
-<h2 id="configuration-of-snmpd-on-your-host-vmx-gylabworkalayanet"><strong>Configuration of snmpd on your host (vmX-gY.lab.workalaya.net)</strong></h2>
-<p>For this exercise your group needs to verify that the snmpd service is running and responding to queries for all machines in your group. First enable snmpd on your machine, then test if your machine is responding, then check each machine of your other group members.</p>
-<ul>
-<li>Install the SNMP agent (daemon) on your host</li>
-</ul>
-<p>Now we update ansible-playbook file named <strong><em>snmp.yml</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd-server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-</div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<ul>
-<li>Configuration</li>
-</ul>
-<p>We will create our own &quot;snmpd.conf&quot; template file and not &quot;snmp.conf&quot; and update ansible playbook named <strong><em>snmp.yml</em></strong> file</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p templates/snmpd
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/snmpd/snmpd.conf
-</div></code></pre>
-<p>Then, copy/paste the following (change vmX-gY to your own host and campus number) and replace &quot;Y&quot; with your campus number:</p>
-<pre class="hljs"><code><div>#  Listen for connections on all interfaces (both IPv4 *and* IPv6)
-agentAddress udp:161,udp6:161
-
-# For SNMPv2: Configure Read-Only community and restrict who can connect
-rocommunity NetManage 100.68.100.0/24
-rocommunity NetManage 100.68.{{class_group}}.16/28
-rocommunity NetManage 100.68.{{class_group}}.254/32
-rocommunity NetManage 127.0.0.1
-rocommunity6 NetManage ::1
-
-# Information about this host
-sysLocation    NPIX Network Management Workshop
-sysContact     lab@{{inventory_hostname}}
-
-# Which OSI layers are active in this host
-# (Application + End-to-End layers)
-sysServices    72
-
-# Include proprietary dskTable MIB (in addition to hrStorageTable)
-includeAllDisks  10%
-
-createUser admin SHA &quot;NetManage&quot; AES
-rwuser admin
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
-</div></code></pre>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t snmpd_server
-
-PLAY [snmp_hosts] *********************************************************************************************
-
-TASK [Gathering Facts] ****************************************************************************************
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [ensure package cache is up to date] *********************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-ok: [vmX-gY.lab.workalaya.com]
-
-TASK [install snmpd tools] ************************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=snmpd)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=libsnmp-dev)
-
-TASK [Update /etc/snmp/snmpd.conf] ****************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-RUNNING HANDLER [restart snmpd] *******************************************************************************
-changed: [vmX-gY.lab.workalaya.com]
-
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-</div></code></pre>
-<h2 id="check-that-snmpd-is-working"><strong>Check that snmpd is working:</strong></h2>
-<p>log into your vm and run following command</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus localhost
-</div></code></pre>
-<h2 id="test-your-neighbors"><strong>Test your neighbors</strong></h2>
-<p>Check now that you can run snmpstatus against your other group members host.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpstatus vm[1..3]-gY.lab.workalaya.net
-</div></code></pre>
-<p>For instance, in group 5, you should verify against:</p>
-<ul>
-<li>vm1-g5.lab.workalaya.net</li>
-<li>vm2-g5.lab.workalaya.net</li>
-<li>vm3-g5.lab.workalaya.net
-and, so on.</li>
-</ul>
-<h2 id="configuration-of-snmpd-on-your-srv1-gylabworkalayanet-server"><strong>Configuration of snmpd on your srv1-gY.lab.workalaya.net server</strong></h2>
-<p>You may want to install the snmp daemon on your campus server at this time. If so, select someone from your group to do this. If not, it will be configured during a later exercise.</p>
-<p>(follow the same process as of configuring your own VM)</p>
-<h2 id="adding-mibs"><strong>Adding MIBs</strong></h2>
-<p>Remember when you ran:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
-</div></code></pre>
-<p>If you noticed, the SNMP client (snmpwalk) couldn't interpret all the OIDs coming back from the Agent:</p>
-<pre class="hljs"><code><div>SNMPv2-SMI::enterprises.9.9.13.1.3.1.2.1 = STRING: &quot;chassis&quot;
-SNMPv2-SMI::enterprises.9.9.13.1.3.1.6.1 = INTEGER: 1
-</div></code></pre>
-<p>What is <em>9.9.13.1.3.1</em> ?</p>
-<p>To be able to interpret this information, we need to download extra MIBs:</p>
-<p>We will use the following MIBs (Don't download them yet!):</p>
-<h3 id="cisco-mibs"><strong>CISCO MIBS</strong></h3>
-<pre class="hljs"><code><div>ftp://ftp.cisco.com/pub/mibs/v2/CISCO-SMI.my
-ftp://ftp.cisco.com/pub/mibs/v2/CISCO-ENVMON-MIB.my
-</div></code></pre>
-<p>To make it easier, we have a local mirror on <a href="http://www.lab.workalaya.net/downloads/mibs/">http://www.lab.workalaya.net/downloads/mibs/</a></p>
-<p>we will update ansible playbook named <strong><em>snmp.yml</em></strong> to Download mib and update <em>/etc/snmp/snmp.conf</em> to include them as follows:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi snmp.yml
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">snmp_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client,</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmp</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmp-mibs-downloader</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^mibs :"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"#mibs :"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp</span> <span class="hljs-string">directory</span> <span class="hljs-string">in</span> <span class="hljs-string">/home/lab/</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/home/lab/.snmp"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">.snmp/snmp.conf</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/snmp/snmp.conf</span>
-<span class="hljs-attr">        dst:</span> <span class="hljs-string">/home/lab/.snmp/snmp.conf</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">600</span>
-<span class="hljs-attr">      become:</span> <span class="hljs-literal">false</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmp_client</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">snmpd</span> <span class="hljs-string">tools</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">libsnmp-dev</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">/etc/snmp/snmpd.conf</span>
-<span class="hljs-attr">      template:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/snmpd/snmpd.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmpd.conf"</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">snmpd_server</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">"/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">        mode:</span> <span class="hljs-number">0700</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">check</span> <span class="hljs-string">if</span> <span class="hljs-string">mibs</span> <span class="hljs-string">exists</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">nagios</span> <span class="hljs-string">Users</span>
 <span class="hljs-attr">      stat:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">'/var/lib/snmp/mibs/cisco/<span class="hljs-template-variable">{{ item }}</span>'</span>
-<span class="hljs-attr">      register:</span> <span class="hljs-string">mib_files</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      register:</span> <span class="hljs-string">nagios_user_pwfile_exists</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">if</span> <span class="hljs-string">mib</span> <span class="hljs-string">files</span> <span class="hljs-string">exist</span>
-<span class="hljs-attr">      set_fact:</span>
-<span class="hljs-attr">        mib_file_stat:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ mib_file_stat|default({}) | combine({item.item: item.stat.exists}) }}</span>"</span>
-<span class="hljs-attr">      with_items:</span> <span class="hljs-string">'<span class="hljs-template-variable">{{ mib_files.results }}</span>'</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">empty</span> <span class="hljs-string">password</span> <span class="hljs-string">file</span>
+<span class="hljs-attr">      command:</span> <span class="hljs-string">touch</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      args:</span>
+<span class="hljs-attr">        creates:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">nagios_user_pwfile_exists</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Download</span> <span class="hljs-string">mibs</span>
-<span class="hljs-attr">      get_url:</span>
-<span class="hljs-attr">        url:</span> <span class="hljs-attr">http://www.lab.workalaya.net/downloads/mibs/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/var/lib/snmp/mibs/cisco/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
-<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">mib_file_stat[item]</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-SMI.my</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">CISCO-ENVMON-MIB.my</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">nagios</span> <span class="hljs-string">admin</span> <span class="hljs-string">user</span>
+<span class="hljs-attr">      htpasswd:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">nagiosadmin</span>
+<span class="hljs-attr">        password:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ class_password }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">update</span> <span class="hljs-string">/etc/snmp/snmp.conf</span> <span class="hljs-string">file</span>
-<span class="hljs-attr">      lineinfile:</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/snmp/snmp.conf"</span>
-<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{item}}</span>"</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Generate</span> <span class="hljs-string">the</span> <span class="hljs-string">nagios</span> <span class="hljs-string">monitoring</span> <span class="hljs-string">templates</span>
+<span class="hljs-attr">      template:</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">./templates/nagios/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/nagios3/conf.d</span>
+<span class="hljs-attr">        backup:</span> <span class="hljs-literal">yes</span>
 <span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibdirs +/var/lib/snmp/mibs/cisco"</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">"mibs +CISCO-ENVMON-MIB:CISCO-SMI"</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">mibs</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">routers.cfg</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">vms.cfg</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">servicegroups.cfg</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">update_config</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
 
 <span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">snmpd</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+<span class="hljs-attr">      shell:</span> <span class="hljs-string">nagios3</span> <span class="hljs-bullet">-v</span> <span class="hljs-string">/etc/nagios3/nagios.cfg</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+<span class="hljs-attr">      service:</span> <span class="hljs-string">name=nagios3</span> <span class="hljs-string">state=restarted</span>
 </div></code></pre>
-<p>run ansible playbook as follows and should see similar output:</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook snmp.yml -t mibs
+<p>Save your changes, verify your work and push changes to Nagios host using ansible.</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook nagios.yml -t update_config
 
-PLAY [snmp_hosts] *********************************************************************************************
+PLAY [nagios_hosts] ************************************************************
 
-TASK [Gathering Facts] ****************************************************************************************
+TASK [Gathering Facts] *********************************************************
 ok: [vmX-gY.lab.workalaya.com]
 
-TASK [Create /var/lib/snmp/mibs/cisco] ************************************************************************
+TASK [Generate the nagios monitoring templates] ********************************
+ok: [vmX-gY.lab.workalaya.com] =&gt; (item=routers.cfg)
+ok: [vmX-gY.lab.workalaya.com] =&gt; (item=vms.cfg)
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item=servicegroups.cfg)
+
+RUNNING HANDLER [verify config] ************************************************
 changed: [vmX-gY.lab.workalaya.com]
 
-TASK [check <span class="hljs-keyword">if</span> mibs exists] ***********************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
+RUNNING HANDLER [restart nagios3] **********************************************
+changed: [vmX-gY.lab.workalaya.com]
 
-TASK [Check <span class="hljs-keyword">if</span> mib files exist] *******************************************************************************
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-SMI.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-SMI.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
-ok: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'invocation'</span>: {<span class="hljs-string">'module_args'</span>: {<span class="hljs-string">'checksum_algorithm'</span>: <span class="hljs-string">'sha1'</span>, <span class="hljs-string">'get_checksum'</span>: True, <span class="hljs-string">'follow'</span>: False, <span class="hljs-string">'path'</span>: <span class="hljs-string">'/var/lib/snmp/mibs/cisco/CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'get_md5'</span>: None, <span class="hljs-string">'get_mime'</span>: True, <span class="hljs-string">'get_attributes'</span>: True}}, <span class="hljs-string">'stat'</span>: {<span class="hljs-string">'exists'</span>: False}, <span class="hljs-string">'changed'</span>: False, <span class="hljs-string">'failed'</span>: False, <span class="hljs-string">'item'</span>: <span class="hljs-string">'CISCO-ENVMON-MIB.my'</span>, <span class="hljs-string">'ansible_loop_var'</span>: <span class="hljs-string">'item'</span>})
+PLAY RECAP *********************************************************************
+vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
+<p>Now if you click on the Service Groups menu item in the Nagios web interface you should see this information grouped together.</p>
+<hr>
+<h2 id="part-vii"><strong>PART VII</strong></h2>
+<h3 id="configure-guest-access-to-the-nagios-web-interface"><strong>Configure Guest Access to the Nagios Web Interface</strong>*</h3>
+<p>You will edit the file /etc/nagios3/cgi.cfg to give read-only guest user access to the Nagios web interface.</p>
+<p>By default Nagios is configured to give full r/w access via the Nagios web interface to the user nagiosadmin. You can change the name of this user, add other users, change how you authenticate users, what users have access to what resources and more via the cgi.cfg file.</p>
+<p>First, update your <strong><em>nagios.yml</em></strong> ansible playbook file to create a &quot;<em>guest</em>&quot; user and password in the <strong><em>htpasswd.users</em></strong> file.</p>
+<p>You can use any password you want (or none). A password of &quot;guest&quot; is not a bad choice if you plan for this to be a r/o account.</p>
+<p>Next, update your <strong><em>nagios.yml</em></strong> ansible playbook file to update the file &quot;<em>/etc/nagios3/cgi.cfg</em>&quot; and tell Nagios to allow the &quot;guest&quot; user some access to information via the web interface.</p>
+<p>Edit <strong><em>nagios.yml</em></strong> ansible playbook file</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi nagios.yml
+</div></code></pre>
+<p>Content to <strong><em>nagios.yml</em></strong> ansible playbook file should look like</p>
+<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">nagios_hosts</span>
+<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">  tasks:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
+<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-TASK [Download mibs] ******************************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-SMI.my)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=CISCO-ENVMON-MIB.my)
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">Nagios</span> <span class="hljs-string">Version</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">      package:</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">nagios3</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">nagios3-doc</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
 
-TASK [update /etc/snmp/snmp.conf file] ************************************************************************
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibdirs +/var/lib/snmp/mibs/cisco)
-changed: [vmX-gY.lab.workalaya.com] =&gt; (item=mibs +CISCO-ENVMON-MIB:CISCO-SMI)
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">nagios</span> <span class="hljs-string">Users</span>
+<span class="hljs-attr">      stat:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      register:</span> <span class="hljs-string">nagios_user_pwfile_exists</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
 
-PLAY RECAP ****************************************************************************************************
-vmX-gY.lab.workalaya.com   : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">empty</span> <span class="hljs-string">password</span> <span class="hljs-string">file</span>
+<span class="hljs-attr">      command:</span> <span class="hljs-string">touch</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      args:</span>
+<span class="hljs-attr">        creates:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">nagios_user_pwfile_exists</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">nagios</span> <span class="hljs-string">admin</span> <span class="hljs-string">user</span>
+<span class="hljs-attr">      htpasswd:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">nagiosadmin</span>
+<span class="hljs-attr">        password:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ class_password }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">nagios</span> <span class="hljs-string">guest</span> <span class="hljs-string">user</span>
+<span class="hljs-attr">      htpasswd:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.username }}</span>"</span>
+<span class="hljs-attr">        password:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.password }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">username:</span> <span class="hljs-string">'guest'</span><span class="hljs-string">,</span> <span class="hljs-attr">password:</span> <span class="hljs-string">'guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">add_guest</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Configure</span> <span class="hljs-string">nagios.cgi</span> <span class="hljs-string">to</span> <span class="hljs-string">allow</span> <span class="hljs-string">guest</span> <span class="hljs-string">access</span>
+<span class="hljs-attr">      lineinfile:</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/nagios3/cgi.cfg"</span>
+<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^<span class="hljs-template-variable">{{ item.property | regex_escape() }}</span>="</span>
+<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.property }}</span>=<span class="hljs-template-variable">{{ item.value }}</span>"</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_system_information'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_configuration_information'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_all_services'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_all_hosts'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">add_guest</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Generate</span> <span class="hljs-string">the</span> <span class="hljs-string">nagios</span> <span class="hljs-string">monitoring</span> <span class="hljs-string">templates</span>
+<span class="hljs-attr">      template:</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">./templates/nagios/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/nagios3/conf.d</span>
+<span class="hljs-attr">        backup:</span> <span class="hljs-literal">yes</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">routers.cfg</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">vms.cfg</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">servicegroups.cfg</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">update_config</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+
+<span class="hljs-attr">  handlers:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+<span class="hljs-attr">      shell:</span> <span class="hljs-string">nagios3</span> <span class="hljs-bullet">-v</span> <span class="hljs-string">/etc/nagios3/nagios.cfg</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+<span class="hljs-attr">      service:</span> <span class="hljs-string">name=nagios3</span> <span class="hljs-string">state=restarted</span>
 </div></code></pre>
-<p>Now, try again (the example uses rtr1-gY.lab.workalaya.net below. You can do this whichever network device you are configuring):</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 .1.3.6.1.4.1.9.9.13.1
+<p>Save your changes, verify your work and push changes to Nagios host using ansible.</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook nagios.yml -t add_guest
+
+PLAY [nagios_hosts] ************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [vmX-gY.lab.workalaya.com]
+
+TASK [Create nagios guest user] ************************************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'username'</span>: <span class="hljs-string">'guest'</span>, <span class="hljs-string">'password'</span>: <span class="hljs-string">'guest'</span>})
+
+TASK [Configure nagios.cgi to allow guest access] **********************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'property'</span>: <span class="hljs-string">'authorized_for_system_information'</span>, <span class="hljs-string">'value'</span>: <span class="hljs-string">'nagiosadmin,guest'</span>})
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'property'</span>: <span class="hljs-string">'authorized_for_configuration_information'</span>, <span class="hljs-string">'value'</span>: <span class="hljs-string">'nagiosadmin,guest'</span>})
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'property'</span>: <span class="hljs-string">'authorized_for_all_services'</span>, <span class="hljs-string">'value'</span>: <span class="hljs-string">'nagiosadmin,guest'</span>})
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'property'</span>: <span class="hljs-string">'authorized_for_all_hosts'</span>, <span class="hljs-string">'value'</span>: <span class="hljs-string">'nagiosadmin,guest'</span>})
+
+RUNNING HANDLER [verify config] ************************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+RUNNING HANDLER [restart nagios3] **********************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+PLAY RECAP *********************************************************************
+vmX-gY.lab.workalaya.com   : ok=5    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 </div></code></pre>
-<p>What do you notice ?</p>
-<h2 id="snmpwalk---the-rest-of-mib-ii"><strong>SNMPwalk - the rest of MIB-II</strong></h2>
-<p>Try and run snmpwalk on any hosts (routers and virtual machines) you have not tried yet, in the 100.68.Y.X network</p>
-<p>Note the kind of information you can obtain.</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifDescr
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAlias
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifXTable | less
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifOperStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 ifAdminStatus
-lab@vmX-gY:~$ snmpwalk 100.68.Y.1 <span class="hljs-keyword">if</span>
+<p>To see if you can log in as the &quot;guest&quot; user you will need to clear the cookies in your web browser or open an alternate web browser if you have one. You will not notice any difference in the web interface. The difference is that a number of items that are available via the web interface (forcing a service/host check, scheduling checks, comments, etc.) will not work for the guest user.</p>
+<hr>
+<h2 id="part-viii"><strong>PART VIII</strong></h2>
+<h3 id="enable-external-commands-in-nagioscfg"><strong>Enable External commands in nagios.cfg</strong></h3>
+<p>This change is required in order to allow users to &quot;Acknowledge&quot; problems with hosts and services in the Web interface. The default file permissions are set up in a secure way to prevent the web interface from updating nagios, so you need to make them slightly more permissive.</p>
+<p>Next, update your <strong><em>nagios.yml</em></strong> ansible playbook file to update the file &quot;<em>/etc/nagios3/nagios.cfg</em>&quot; and to change directory permissions and to make the changes permanent.</p>
+<p>Edit <strong><em>nagios.yml</em></strong> ansible playbook file</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi nagios.yml
 </div></code></pre>
-<p>(Remember that with <em>less</em> you press <strong><em>&lt;space&gt;</em></strong> for next page, <strong><em>b</em></strong> to go back to previous page, and <strong><em>q</em></strong> to quit)</p>
-<p>Can you see what's different between <strong><em>ifTable</em></strong> and <strong><em>ifXTable</em></strong>?</p>
-<p>What do you think might be the difference between <strong><em>ifOperStatus</em></strong> and <strong><em>ifAdminStatus</em></strong>? Can you imagine a scenario where this could be useful ?</p>
-<h2 id="more-mib-oid-fun"><strong>More MIB-OID fun</strong></h2>
-<p>Use SNMP to examine:</p>
-<ul>
-<li>the running processes on your neighbor's host (hrSWRun)</li>
-<li>the amount of free diskspace on your neighbor's host (hrStorage)</li>
-<li>the interfaces on your neighbor's host (ifIndex, ifDescr)</li>
-</ul>
-<p>Can you use short names to walk these OID tables ?</p>
-<ul>
-<li>Experiment with the &quot;snmptranslate&quot; command, example:</li>
-</ul>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ snmptranslate .1.3.6.1.4.1.9.9.13.1
+<p>Content to <strong><em>nagios.yml</em></strong> ansible playbook file should look like</p>
+<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">nagios_hosts</span>
+<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">  tasks:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
+<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">Nagios</span> <span class="hljs-string">Version</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">      package:</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">nagios3</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">nagios3-doc</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Check</span> <span class="hljs-string">nagios</span> <span class="hljs-string">Users</span>
+<span class="hljs-attr">      stat:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      register:</span> <span class="hljs-string">nagios_user_pwfile_exists</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">empty</span> <span class="hljs-string">password</span> <span class="hljs-string">file</span>
+<span class="hljs-attr">      command:</span> <span class="hljs-string">touch</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      args:</span>
+<span class="hljs-attr">        creates:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">nagios_user_pwfile_exists</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">nagios</span> <span class="hljs-string">admin</span> <span class="hljs-string">user</span>
+<span class="hljs-attr">      htpasswd:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">nagiosadmin</span>
+<span class="hljs-attr">        password:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ class_password }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">configure</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">nagios</span> <span class="hljs-string">guest</span> <span class="hljs-string">user</span>
+<span class="hljs-attr">      htpasswd:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/nagios3/htpasswd.users</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.username }}</span>"</span>
+<span class="hljs-attr">        password:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.password }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">username:</span> <span class="hljs-string">'guest'</span><span class="hljs-string">,</span> <span class="hljs-attr">password:</span> <span class="hljs-string">'guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">add_guest</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Configure</span> <span class="hljs-string">nagios.cgi</span> <span class="hljs-string">to</span> <span class="hljs-string">allow</span> <span class="hljs-string">guest</span> <span class="hljs-string">access</span>
+<span class="hljs-attr">      lineinfile:</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/nagios3/cgi.cfg"</span>
+<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^<span class="hljs-template-variable">{{ item.property | regex_escape() }}</span>="</span>
+<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.property }}</span>=<span class="hljs-template-variable">{{ item.value }}</span>"</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_system_information'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_configuration_information'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_all_services'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'authorized_for_all_hosts'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'nagiosadmin,guest'</span> <span class="hljs-string">}</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">add_guest</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Update</span> <span class="hljs-string">nagios.cfg</span> <span class="hljs-string">to</span> <span class="hljs-string">Enable</span> <span class="hljs-string">External</span> <span class="hljs-string">commands</span>
+<span class="hljs-attr">      lineinfile:</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">"/etc/nagios3/nagios.cfg"</span>
+<span class="hljs-attr">        regexp:</span> <span class="hljs-string">"^<span class="hljs-template-variable">{{ item.property | regex_escape() }}</span>="</span>
+<span class="hljs-attr">        line:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item.property }}</span>=<span class="hljs-template-variable">{{ item.value }}</span>"</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">property:</span> <span class="hljs-string">'check_external_commands'</span><span class="hljs-string">,</span> <span class="hljs-attr">value:</span> <span class="hljs-string">'1'</span> <span class="hljs-string">}</span>
+<span class="hljs-attr">      register:</span> <span class="hljs-string">update_directory_permission</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">external_command</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">change</span> <span class="hljs-string">directory</span> <span class="hljs-string">permissions</span>
+<span class="hljs-attr">      shell:</span> <span class="hljs-string">"dpkg-statoverride --update --add <span class="hljs-template-variable">{{ item.user }}</span> <span class="hljs-template-variable">{{ item.group }}</span> <span class="hljs-template-variable">{{ item.permission }}</span> <span class="hljs-template-variable">{{ item.dir }}</span>"</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">user:</span> <span class="hljs-string">'nagios'</span><span class="hljs-string">,</span> <span class="hljs-attr">group:</span> <span class="hljs-string">'www-data'</span><span class="hljs-string">,</span> <span class="hljs-attr">permission:</span> <span class="hljs-string">'2710'</span><span class="hljs-string">,</span> <span class="hljs-attr">dir:</span> <span class="hljs-string">'/var/lib/nagios3/rw'</span> <span class="hljs-string">}</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">{</span> <span class="hljs-attr">user:</span> <span class="hljs-string">'nagios'</span><span class="hljs-string">,</span> <span class="hljs-attr">group:</span> <span class="hljs-string">'nagios'</span><span class="hljs-string">,</span> <span class="hljs-attr">permission:</span> <span class="hljs-string">'751'</span><span class="hljs-string">,</span> <span class="hljs-attr">dir:</span> <span class="hljs-string">'/var/lib/nagios3'</span> <span class="hljs-string">}</span>
+<span class="hljs-attr">      when:</span> <span class="hljs-string">update_directory_permission.changed</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">external_command</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Generate</span> <span class="hljs-string">the</span> <span class="hljs-string">nagios</span> <span class="hljs-string">monitoring</span> <span class="hljs-string">templates</span>
+<span class="hljs-attr">      template:</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">./templates/nagios/{{</span> <span class="hljs-string">item</span> <span class="hljs-string">}}</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/nagios3/conf.d</span>
+<span class="hljs-attr">        backup:</span> <span class="hljs-literal">yes</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">routers.cfg</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">vms.cfg</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">servicegroups.cfg</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">update_config</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+
+<span class="hljs-attr">  handlers:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">verify</span> <span class="hljs-string">config</span>
+<span class="hljs-attr">      shell:</span> <span class="hljs-string">nagios3</span> <span class="hljs-bullet">-v</span> <span class="hljs-string">/etc/nagios3/nagios.cfg</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">nagios3</span>
+<span class="hljs-attr">      service:</span> <span class="hljs-string">name=nagios3</span> <span class="hljs-string">state=restarted</span>
 </div></code></pre>
-<ul>
-<li>Try with various OIDs</li>
-</ul>
+<p>Save your changes, verify your work and push changes to Nagios host using ansible.</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook nagios.yml -t external_command
+
+PLAY [nagios_hosts] ************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [vmX-gY.lab.workalaya.com]
+
+TASK [Update nagios.cfg to Enable External commands] ***************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'property'</span>: <span class="hljs-string">'check_external_commands'</span>, <span class="hljs-string">'value'</span>: <span class="hljs-string">'1'</span>})
+
+TASK [change directory permissions] ********************************************
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'user'</span>: <span class="hljs-string">'nagios'</span>, <span class="hljs-string">'group'</span>: <span class="hljs-string">'www-data'</span>, <span class="hljs-string">'permission'</span>: <span class="hljs-string">'2710'</span>, <span class="hljs-string">'dir'</span>: <span class="hljs-string">'/var/lib/nagios3/rw'</span>})
+changed: [vmX-gY.lab.workalaya.com] =&gt; (item={<span class="hljs-string">'user'</span>: <span class="hljs-string">'nagios'</span>, <span class="hljs-string">'group'</span>: <span class="hljs-string">'nagios'</span>, <span class="hljs-string">'permission'</span>: <span class="hljs-string">'751'</span>, <span class="hljs-string">'dir'</span>: <span class="hljs-string">'/var/lib/nagios3'</span>})
+
+RUNNING HANDLER [verify config] ************************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+RUNNING HANDLER [restart nagios3] **********************************************
+changed: [vmX-gY.lab.workalaya.com]
+
+PLAY RECAP *********************************************************************
+vmX-gY.lab.workalaya.com   : ok=5    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
+<p>Once this is done, go to 'Problems' &gt; 'Services (Unhandled)' and find a service in the red (critical) or yellow (warning) state. Click on the service name. Then under &quot;Service commands&quot; click on &quot;Acknowledge this service problem&quot;.</p>
+<p>The problem should disappear from the list of unhandled problems.</p>
 <hr>
 
 </body>
