@@ -448,14 +448,14 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
 <pre class="hljs"><code><div><span class="hljs-comment"># /usr/lib/nagios/plugins/check_http -H localhost -u /nagios3/</span>
 </div></code></pre>
 <p>So the goal is to configure nagios to call check_http in this way.</p>
-<pre class="hljs"><code><div>{hint, /etc/nagios-plugins/config/http.cfg)
+<pre class="hljs"><code><div>#(hint, /etc/nagios-plugins/config/http.cfg)
 
 define command{
         command_name    check_http_url
         command_line    /usr/lib/nagios/plugins/check_http -H '$HOSTADDRESS$' -u '$ARG1$'
         }
 
-    (hint, /etc/nagios3/conf.d/services_nagios2.cfg_
+#(hint, /etc/nagios3/conf.d/services_nagios2.cfg)
 
 define service {
         hostgroup_name                  nagios-servers
@@ -524,7 +524,7 @@ define command{
 <p>Note that &quot;command_line&quot; is a single line. If you copy and paste in your editor, the line may not wrap properly and you may have to manually &quot;join&quot; the two lines so they are one.</p>
 <p>Now you need to edit the file /etc/nagios3/conf.d/services_nagios2.cfg and add in this service check. We'll run this check against all our servers in the classroom, or the hostgroup &quot;debian-servers&quot;</p>
 <p>Edit the file /etc/nagios3/conf.d/services_nagios2.cfg</p>
-<pre class="hljs"><code><div><span class="hljs-comment"># editor /etc/nagios3/conf.d/services_nagios2.cfg</span>
+<pre class="hljs"><code><div><span class="hljs-comment"># vi /etc/nagios3/conf.d/services_nagios2.cfg</span>
 </div></code></pre>
 <p>At the bottom of the file add the following definition:</p>
 <pre class="hljs"><code><div># check that snmp is up on all servers
@@ -543,12 +543,12 @@ define service {
 define hostgroup {
        hostgroup_name   snmp-servers
                alias    snmp servers
-               members  noc,localhost,pc1,pc2,pc3,pc4...pc36,rtr1,rtr2,rtr3...rtr9
+               members  noc,localhost,vm1-g1,vm2-g2,vm3-g1,vm1-g12...vm3-g12,rtr1-g1,rtr1-g2,rtr1-g3...rtr1-g12
       }
 </div></code></pre>
-<p>Note that for &quot;members&quot; you can add in all PCs and routers as they should all have snmp up and running at this time. Remember to EXCLUDE our pc and use localhost instead.</p>
+<p>Note that for &quot;members&quot; you can add in all VMs and routers as they should all have snmp up and running at this time. Remember to EXCLUDE our VM and use localhost instead.</p>
 <p>Now verify that your changes are correct and restart Nagios.</p>
-<pre class="hljs"><code><div><span class="hljs-comment"># service nagios3 restart</span>
+<pre class="hljs"><code><div><span class="hljs-comment"># systemctl restart nagios3</span>
 </div></code></pre>
 <p>**<strong>Defect / Bug in Ubuntu 12.04 LTS</strong>**</p>
 <p>The net-snmp 5.6.x package appears to not install one of the IANA mibs (IANAifType-MIB). This causes a MIB error, which, in turn causes the snmp check plugin to fail. To fix this problem do the following (as root):</p>

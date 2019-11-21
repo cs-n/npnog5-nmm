@@ -484,12 +484,12 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
 <p>Create new YAML file named <strong><em>all.yml</em></strong> inside <strong><em>inventory/group_vars/</em></strong> and define variable name <em>class_password</em></p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir inventory/group_vars
 (venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/group_vars/all.yml
+</div></code></pre>
+<pre class="hljs"><code><div><span class="hljs-attr">ansible_ssh_user:</span> <span class="hljs-string">lab</span>
+<span class="hljs-attr">ansible_become_pass:</span> <span class="hljs-string">lab</span>
 
-ansible_ssh_user=lab
-ansible_become_pass=lab
-
-class_password: lab
-class_group: Y
+<span class="hljs-attr">class_password:</span> <span class="hljs-string">lab</span>
+<span class="hljs-attr">class_group:</span> <span class="hljs-string">Y</span>
 </div></code></pre>
 <p>update inventory/hosts as following</p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
@@ -651,7 +651,7 @@ vmX-gY.lab.workalaya.net   : ok=4    changed=3    unreachable=0    failed=0    s
 </div></code></pre>
 <p>and click on hosts. You should now see your routers listed. They may still be waiting to be checked. Eventually they should turn green once Nagios runs a check.</p>
 <h3 id="creating-the-vmscfg-template-file"><strong>Creating the vms.cfg template file</strong></h3>
-<p>Now we create entries for the 3 vms (vm1-gY through vm3-gY) and the group shared server (srv1-g{{class_group}}).</p>
+<p>Now we create entries for the 3 vms (vm1-gY through vm3-gY) and the group shared server (srv1-gY).</p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/vms.cfg
 </div></code></pre>
 <p>For each group place this entry at the top of the vms.cfg file (replace &quot;Y&quot; with your group number):</p>
