@@ -1,0 +1,14 @@
+--- bin/perldeps.pl.orig	2016-07-13 10:16:03.717682539 +0000
++++ bin/perldeps.pl	2016-07-13 10:08:24.358430631 +0000
+@@ -232,8 +232,8 @@
+ 	my $ans = <STDIN>;
+ 	if ( $ans =~ /(Y|y)/ ){
+ 	    print "Downloading necessary SNMP MIB files. This may take a few minutes.\n";
+-	    &cmd('rm -fr /tmp/netdisco-mibs');
+-	    &cmd('/usr/sbin/netdisco-mibs-download');
++	    #&cmd('rm -fr /tmp/netdisco-mibs');
++	    #&cmd('/usr/sbin/netdisco-mibs-download');
+ 	    print "\nInstalling SNMP MIB files\n";
+ 	    &cmd('/usr/sbin/netdisco-mibs-install');
+ 	    print "\nA new /etc/snmp/snmp.conf needs to be installed to point to the newly ".
+
