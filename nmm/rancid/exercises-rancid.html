@@ -483,6 +483,9 @@ vmX-gY.lab.workalaya.net
 [smokeping_hosts]
 vmX-gY.lab.workalaya.net
 
+[netdot_hosts]
+vmX-gY.lab.workalaya.net
+
 [rancid_hosts]
 vmX-gY.lab.workalaya.net
 </div></code></pre>
@@ -1316,7 +1319,7 @@ ScriptAlias /viewvc /usr/lib/cgi-bin/viewvc.cgi
 <span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">apache2</span>
 <span class="hljs-attr">      tags:</span> <span class="hljs-string">apache_config</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">check</span> <span class="hljs-string">viewvc</span> <span class="hljs-string">.htpasswd</span> <span class="hljs-string">dile</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">check</span> <span class="hljs-string">viewvc</span> <span class="hljs-string">.htpasswd</span> <span class="hljs-string">file</span>
 <span class="hljs-attr">      stat:</span>
 <span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/viewvc/.htpasswd</span>
 <span class="hljs-attr">      ignore_errors:</span> <span class="hljs-literal">true</span>
@@ -1330,7 +1333,7 @@ ScriptAlias /viewvc /usr/lib/cgi-bin/viewvc.cgi
 <span class="hljs-attr">      when:</span> <span class="hljs-string">not</span> <span class="hljs-string">viewvc_pwfile_exists</span>
 <span class="hljs-attr">      tags:</span> <span class="hljs-string">secure_viewvc</span>
 
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">nagios</span> <span class="hljs-string">admin</span> <span class="hljs-string">user</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">Create</span> <span class="hljs-string">lab</span> <span class="hljs-string">user</span> <span class="hljs-string">on</span> <span class="hljs-string">.htpasswd</span>
 <span class="hljs-attr">      htpasswd:</span>
 <span class="hljs-attr">        path:</span> <span class="hljs-string">/etc/viewvc/.htpasswd</span>
 <span class="hljs-attr">        name:</span> <span class="hljs-string">lab</span>
@@ -1356,7 +1359,7 @@ ok: [vmX-gY.lab.workalaya.com]
 TASK [copy ViewVC apache config] ******************************************************************************
 changed: [vmX-gY.lab.workalaya.com]
 
-TASK [check viewvc .htpasswd dile] ****************************************************************************
+TASK [check viewvc .htpasswd file] ****************************************************************************
 ok: [vmX-gY.lab.workalaya.com]
 
 TASK [Create empty password file] *****************************************************************************
