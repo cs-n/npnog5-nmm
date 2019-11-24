@@ -435,9 +435,13 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
 </ul>
 <hr>
 <h2 id="configure-your-collector"><strong>Configure Your Collector</strong></h2>
+<p>We will collect netflow data on <em><strong>srv1-gY.lab.workalaya.net</strong></em> server.</p>
+<p>Please find your classmates that are using the same group as you. Get in to a group and do the following exercise together. That is, pick one person who will configure your group's <em><strong>srv1-gY</strong></em> server using ansible.</p>
+<p>Optionally you can configure own VM as netflow collector as well.</p>
+<p>This document follows installing on <em><strong>vmX-gY.lab.workalaya.net</strong></em> instead of using <em><strong>srv1-gY.lab.workalaya.net</strong></em>.</p>
 <h3 id="install-nfdump-and-associated-software"><strong>Install NFDump and associated software</strong></h3>
-<p>NFdump is part of the Netflow flow collector tools, which includes:</p>
-<p>nfcapd, nfdump, nfreplay, nfexpire, nftest, nfgen</p>
+<p><em><strong>NFdump</strong></em> is part of the Netflow flow collector tools, which includes:</p>
+<p>nfcapd, nfdump, nfexpire, nfprofile, nfreplay, nftrack, nfanon</p>
 <p>Create a new ansible playbook named <em><strong>nfdump-nfsen.yml</strong></em> to install NFDump.</p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi nfdump-nfsen.yml
 </div></code></pre>
@@ -496,6 +500,7 @@ vmX-gY.lab.workalaya.net
 <span class="hljs-section">
 [nfsen_hosts]</span>
 vmX-gY.lab.workalaya.net
+srv1-gY.lab.workalaya.net
 </div></code></pre>
 <p>Now run ansible playbook to install <em><strong>nfdump</strong></em> as following.</p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook nfdump-nfsen.yml
