@@ -575,6 +575,47 @@ group_end
 <span class="hljs-attr">        name:</span> <span class="hljs-string">tenshi</span>
 <span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
 </div></code></pre>
+<p>finally run ansilbe playbook named <em><strong>syslog.yml</strong></em> to install tenshi and configure it as</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook syslog.yml
+
+PLAY [syslog_hosts] *****************************************************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************************************************
+ok: [srv1-gY.lab.workalaya.net]
+
+TASK [ensure package cache is up to date] *******************************************************************************************************************
+[WARNING]: Could not find aptitude. Using apt-get instead
+
+changed: [srv1-gY.lab.workalaya.net]
+
+TASK [install syslog-ng] ************************************************************************************************************************************
+ok: [srv1-gY.lab.workalaya.net] =&gt; (item=syslog-ng)
+ok: [srv1-gY.lab.workalaya.net] =&gt; (item=syslog-ng-core)
+
+TASK [create /var/<span class="hljs-built_in">log</span>/remote-syslog directory] **************************************************************************************************************
+ok: [srv1-gY.lab.workalaya.net]
+
+TASK [<span class="hljs-built_in">enable</span> remote syslog settings] ************************************************************************************************************************
+changed:: [srv1-gY.lab.workalaya.net]
+
+TASK [updatae <span class="hljs-built_in">log</span> rotation config] **************************************************************************************************************************
+changed:: [srv1-gY.lab.workalaya.net]
+
+TASK [install tenshi] ***************************************************************************************************************************************
+changed:: [srv1-gY.lab.workalaya.net] =&gt; (item=tenshi)
+
+TASK [configure tenshi] *************************************************************************************************************************************
+changed:: [srv1-gY.lab.workalaya.net]
+
+TASK [activate tenshi to load config file] ******************************************************************************************************************
+changed:: [srv1-gY.lab.workalaya.net]
+
+RUNNING HANDLER [restart tenshi] ****************************************************************************************************************************
+changed: [srv1-gY.lab.workalaya.net]
+
+PLAY RECAP **************************************************************************************************************************************************
+srv1-gY.lab.workalaya.net  : ok=10    changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+</div></code></pre>
 <hr>
 <h3 id="testing-tenshi"><strong>Testing Tenshi</strong></h3>
 <p>Log in to your router, and run some &quot;config&quot; commands (example below):</p>
