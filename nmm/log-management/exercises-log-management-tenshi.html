@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>exercises-log-management-syslog-ng.md</title>
+<title>exercises-log-management-tenshi.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -421,11 +421,11 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
           : 'default'
     });
   </script>
-<h1 id="log-management-using-syslog-ng"><strong>Log management: Using syslog-ng</strong></h1>
+<h1 id="log-management-using-tenshi---part-2"><strong>Log management: Using Tenshi - Part 2</strong></h1>
 <h2 id="introduction"><strong>Introduction</strong></h2>
 <h3 id="goals"><strong>Goals</strong></h3>
 <ul>
-<li>Learn how to use syslog-ng to manage logs</li>
+<li>Learn how to use tenshi for log monitoring</li>
 </ul>
 <h3 id="notes"><strong>Notes</strong></h3>
 <ul>
@@ -435,64 +435,75 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
 </ul>
 <hr>
 <h2 id="exercises"><strong>Exercises</strong></h2>
-<p>Please find your classmates that are using the same router as you. Get in to a group and do the following exercise together. That is, pick one person who will log in to your group's router, but all of you should assist with the actual configuration.</p>
-<h3 id="configure-your-routers-to-send-syslog-messages-to-your-shared-server-srv1-gy"><strong>Configure your routers to send syslog messages to your shared server (srv1-gY):</strong></h3>
-<p>Configure network devices below to send logs to srv1-gY.lab.workalaya.net (100.68.Y.254)</p>
+<p>First make sure that your network devices are configured to send logs to your shared srv1-gY server instance (this should have been done in the previous exercise).</p>
+<h3 id="install-and-configure-tenshi"><strong>Install and configure Tenshi</strong></h3>
+<p>As a group work on this exercise together.</p>
+<p>We will update our ansible playbook file named <em><strong>syslog.yml</strong></em> file to perform following tasks</p>
 <ul>
-<li>rtr1-gY.lab.workalaya.net</li>
-<li>vm1-gY</li>
-<li>vm2-gY</li>
-<li>vm3-gY</li>
+<li>configure syslog-ng to save consolidated syslog file from remote source</li>
+<li>log rotation of consolidated syslog file</li>
+<li>install tenshi</li>
+<li>configure tenshi</li>
 </ul>
-<p>You will SSH to your group's network devices and do the following:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
+<p>first update syslog-ng config file named <em><strong>remote-log.conf</strong></em> located on <em><strong>files/syslog-ng</strong></em> as:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/syslog-ng
+(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/syslog-ng/remote-log.conf
 </div></code></pre>
-<p>Repeat the next command &quot;logging 100.68.Y.254&quot; for each network device in your campus group.</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# logging 100.68.Y.254
-rtr1-gY(config)# logging facility local0
-rtr1-gY(config)# logging userinfo
-rtr1-gY(config)# exit
-rtr1-gY# write memory
+<p>copy and paste folowing content and save</p>
+<pre class="hljs"><code><div>source s_net {
+    udp(ip(0.0.0.0) port(514));
+    tcp(ip(0.0.0.0) port(514));
+};
+
+destination remote-log {
+    file(&quot;/var/log/remote-syslog/${HOST}/${YEAR}/${MONTH}/${DAY}/${FACILITY}.log&quot;
+        owner(root) group(root) perm(0644) dir_perm(0755) create_dirs(yes)
+    );
+};
+
+log {
+    source(s_net);
+    destination(remote-log);
+};
+
+filter f_routers { facility(local0); };
+
+destination consolidated {
+    file(&quot;/var/log/remote-syslog/consolidated.log&quot;, owner(root) group(root) perm(0644));
+};
+
+log {
+    source(s_src);
+    filter(f_routers);
+    destination(routers);
+};
 </div></code></pre>
-<p>Now run 'show logging' to see the summary of the logging configuration.</p>
-<pre class="hljs"><code><div>rtr1-gY# show logging
+<p>and Create a daily automated script to truncate the <em><strong>consolidated.log</strong></em> log file so it doesn't grow too big as (COPY and PASTE):</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/syslog-ng/syslog-consolidated
 </div></code></pre>
-<p>Logout from the router (exit)</p>
-<pre class="hljs"><code><div>rtr1-gY# exit
+<pre class="hljs"><code><div>/var/log/remote-syslog/consolidated.log {
+  daily
+  copytruncate
+  rotate 1
+  postrotate
+    /etc/init.d/tenshi restart
+  endscript
+}
 </div></code></pre>
-<p>That's it. The network device should now be sending UDP SYSLOG packets to your shared server (srv1-gY) on port 514. To verify this log in on your shared server:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@srv1-gY.lab.workalaya.net
+<p>next create tenshi config file as:</p>
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p templates/tenshi
+(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/tenshi/network
 </div></code></pre>
-<p>and do the following:</p>
-<pre class="hljs"><code><div>rancid@srv1-gY:~$ sudo tcpdump -s0 -nv -i eth0 port 514
+<pre class="hljs"><code><div>set logfile /var/log/remote-syslog/consolidated.log
+set queue network_alarms tenshi@localhost lab@localhost [*/1 * * * *] Log check
+
+group_host ^100\.68\.
+network_alarms SYS-5-CONFIG_I
+network_alarms PRIV_AUTH_PASS
+network_alarms LINK
+group_end
 </div></code></pre>
-<p>Then have one person in your group log back in on the network device and do the following:</p>
-<pre class="hljs"><code><div>$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
-rtr1-gY(config)# exit
-rtr1-gY# exit
-</div></code></pre>
-<p>You should see some output on your shared server's (srv1-gY) screen from TCPDUMP. It should look something like:</p>
-<pre class="hljs"><code><div>tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
-14:05:02.620767 IP (tos 0x0, ttl 254, id 43, offset 0, flags [none], proto UDP (17), length 215)
-    100.68.6.1.62222 &gt; 100.68.6.254.514: [udp sum ok] SYSLOG, length: 187
-        Facility local0 (16), Severity notice (5)
-        Msg: 466: Feb 22 14:05:01.545: %SSH-5-SSH2_USERAUTH: User <span class="hljs-string">'lab'</span> authentication <span class="hljs-keyword">for</span> SSH2 Session from 100.64.0.241 (tty = 2) using crypto cipher <span class="hljs-string">'aes128-cbc'</span>, hmac <span class="hljs-string">'hmac-sha1'</span> Succeeded
-</div></code></pre>
-<p>Now you can configure the logging software on your shared server (srv1) to receive this information and log it to a new set of files.</p>
-<hr>
-<h3 id="install-syslog-ng-using-ansible"><strong>Install syslog-ng using ansible</strong></h3>
-<p>Now login back to ansible control host.</p>
-<p>Create a new ansible playbook named <em><strong>syslog.yml</strong></em> to install syslog-ng and configure syslog-ng</p>
-<p>This ansilbe playbook will perform:</p>
-<ul>
-<li>install syslog-ng and its dependencies</li>
-<li>configure syslog-ng to listen for remote syslog</li>
-<li>create directory to store remote syslog</li>
-</ul>
+<p>Now update ansible playbook named <em><strong>syslog.yml</strong></em> file to install tenshi and make required changes as</p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi syslog.yml
 </div></code></pre>
 <pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">syslog_hosts</span>
@@ -522,148 +533,63 @@ rtr1-gY# exit
 <span class="hljs-attr">        src:</span> <span class="hljs-string">files/syslog-ng/remote-log.conf</span>
 <span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/syslog-ng/conf.d/</span>
 <span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">syslog-ng</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">config</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">config,</span> <span class="hljs-string">tenshi</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">updatae</span> <span class="hljs-string">log</span> <span class="hljs-string">rotation</span> <span class="hljs-string">config</span>
+<span class="hljs-attr">      copy:</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">files/syslog-ng/syslog-consolidated</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/logrotate.d/</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">config,</span> <span class="hljs-string">tenshi</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">      package:</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
+<span class="hljs-attr">      with_items:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">install,</span> <span class="hljs-string">tenshi</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">configure</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">      copy:</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">templates/tenshi/network</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/tenshi/includes-available/</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">config,</span> <span class="hljs-string">tenshi</span>
+
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">activate</span> <span class="hljs-string">tenshi</span> <span class="hljs-string">to</span> <span class="hljs-string">load</span> <span class="hljs-string">config</span> <span class="hljs-string">file</span>
+<span class="hljs-attr">      file:</span>
+<span class="hljs-attr">        src:</span> <span class="hljs-string">/etc/tenshi/includes-available/network</span>
+<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/tenshi/includes-active/network</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">link</span>
+<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">      tags:</span> <span class="hljs-string">config,</span> <span class="hljs-string">tenshi</span>
 
 <span class="hljs-attr">  handlers:</span>
 <span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">syslog-ng</span>
 <span class="hljs-attr">      service:</span>
 <span class="hljs-attr">        name:</span> <span class="hljs-string">syslog-ng</span>
 <span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
-</div></code></pre>
-<p>update inventory/hosts as following</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-section">[nagios_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[snmp_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[smokeping_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[rancid_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[nfsen_hosts]</span>
-vmX-gY.lab.workalaya.net
-srv1-gY.lab.workalaya.net
-<span class="hljs-section">
-[syslog_hosts]</span>
-srv1-gY.lab.workalaya.net
-</div></code></pre>
-<p>create syslog-ng config file name <em><strong>remote-log.conf</strong></em> inside <em><strong>file/syslog-ng</strong></em></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/syslog-ng
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/syslog-ng/remote-log.conf
-</div></code></pre>
-<p>copy and paste folowing content and save</p>
-<pre class="hljs"><code><div>source s_net {
-    udp(ip(0.0.0.0) port(514));
-    tcp(ip(0.0.0.0) port(514));
-};
 
-destination remote-log {
-    file(&quot;/var/log/remote-syslog/${HOST}/${YEAR}/${MONTH}/${DAY}/${FACILITY}.log&quot;
-        owner(root) group(root) perm(0644) dir_perm(0755) create_dirs(yes)
-    );
-};
-
-log {
-    source(s_net);
-    destination(remote-log);
-};
-</div></code></pre>
-<p>Now run ansible playbook to install <em><strong>syslog-ng</strong></em></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook syslog.yml
-
-PLAY [syslog_hosts] *****************************************************************************************************************************************
-
-TASK [Gathering Facts] **************************************************************************************************************************************
-ok: [vmX-gY.lab.workalaya.net]
-
-TASK [ensure package cache is up to date] *******************************************************************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-changed: [vmX-gY.lab.workalaya.net]
-
-TASK [install syslog-ng] ************************************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net] =&gt; (item=syslog-ng)
-ok: [vmX-gY.lab.workalaya.net] =&gt; (item=syslog-ng-core)
-
-TASK [create /var/<span class="hljs-built_in">log</span>/remote-syslog directory] **************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net]
-
-TASK [<span class="hljs-built_in">enable</span> remote syslog settings] ************************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net]
-
-RUNNING HANDLER [restart syslog-ng] *************************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net]
-
-PLAY RECAP **************************************************************************************************************************************************
-vmX-gY.lab.workalaya.net   : ok=6    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">      systemd:</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">tenshi</span>
+<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
 </div></code></pre>
 <hr>
-<h3 id="test-syslog"><strong>Test syslog</strong></h3>
-<p>To be sure there are some logging messages log back in to the network device, and run some &quot;config&quot; commands, then logout. e.g.</p>
-<pre class="hljs"><code><div>$ ssh lab@rtr1-gY.lab.workalaya.net
+<h3 id="testing-tenshi"><strong>Testing Tenshi</strong></h3>
+<p>Log in to your router, and run some &quot;config&quot; commands (example below):</p>
+<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
 rtr1-gY&gt; enable
+Password: &lt;password&gt;
 rtr1-gY# config terminal
+rtr1-gY(config)# int FastEthernet0/0
+rtr1-gY(config-if)# description Description Change for FastEthernet0/0 for Tenshi
+rtr1-gY(config-if)# exit
 rtr1-gY(config)# exit
-rtr1-gY# exit
+rtr1-gY# write memory
 </div></code></pre>
-<p>Be sure you log out of the network device. If too many people log in without logging out then others cannot gain access to the network device.</p>
-<hr>
-<h3 id="on-your-shared-server-srv1-see-if-messages-are-starting-to-appear-under-varlognetworkremote-log"><strong>On your shared server (srv1), See if messages are starting to appear under /var/log/network/remote-log/</strong></h3>
-<pre class="hljs"><code><div>lab@srv1-g1:~$ <span class="hljs-built_in">cd</span> /var/<span class="hljs-built_in">log</span>/remote-syslog/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog$ ls
-100.68.1.1 100.68.1.21 100.68.1.22 100.68.1.23
-
-... above will show you the directory showing all remote hosts
-
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog$ <span class="hljs-built_in">cd</span> 100.68.1.1/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1$ ls
-2019
-
-... above will show you the directory <span class="hljs-keyword">for</span> the year
-
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1$ <span class="hljs-built_in">cd</span> 2019/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019$ ls
-10 11
-
-... above will show you the directory <span class="hljs-keyword">for</span> the month
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019$ <span class="hljs-built_in">cd</span> 11
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11$ ls
-22 23 24
-
-... above will show you the day of the month
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11$ <span class="hljs-built_in">cd</span> 24
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11/24$ ls
-local0.log  local7.log
-
-... above will show you the router<span class="hljs-string">'s log
-</span></div></code></pre>
-<p>You can view the resulting log file by using a pager program such as less, more, cat, etc...</p>
-<p>You will see the logging is capture like below;</p>
-<pre class="hljs"><code><div>lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11/24$ less local0.log
-
-Nov 24 18:49:32 100.68.1.1 %SYS-5-CONFIG_I: Configured from console by lab on vty0 (100.68.1.21)
-Nov 24 18:51:06 100.68.1.1 %SYS-5-CONFIG_I: Configured from console by lab on vty0 (100.68.1.21)
-Nov 24 18:53:59 100.68.1.1 %SSH-5-SSH2_SESSION: SSH2 Session request from 100.68.100.250 (tty = 1) using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> Failed
-Nov 24 18:53:59 100.68.1.1 %SSH-5-SSH2_CLOSE: SSH2 Session from 100.68.100.250 (tty = 1) <span class="hljs-keyword">for</span> user <span class="hljs-string">''</span> using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> closed
-Nov 24 18:58:59 100.68.1.1 %SSH-5-SSH2_SESSION: SSH2 Session request from 100.68.100.250 (tty = 1) using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> Failed
-Nov 24 18:58:59 100.68.1.1 %SSH-5-SSH2_CLOSE: SSH2 Session from 100.68.100.250 (tty = 1) <span class="hljs-keyword">for</span> user <span class="hljs-string">''</span> using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> closed
-Nov 24 19:01:12 100.68.1.1 %SSH-5-SSH2_CLOSE: SSH2 Session from 100.68.1.21 (tty = 0) <span class="hljs-keyword">for</span> user <span class="hljs-string">'lab'</span> using crypto cipher <span class="hljs-string">'aes128-cbc'</span>, hmac <span class="hljs-string">'hmac-sha1'</span> closed
-</div></code></pre>
-<hr>
-<h2 id="troubleshooting"><strong>Troubleshooting</strong></h2>
-<p>If no files are appearing under the <code>/var/log/remote-syslog</code> directory, then another command to try while logged into the router, in config mode, is to shutdown / no shutdown a Loopback interface, for example:</p>
-<pre class="hljs"><code><div>$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
+<p>Don't exit from the router yet. Just as in the previous syslog-ng exercises, attempt to shutdown / no shutdown loopback interface:</p>
+<pre class="hljs"><code><div>rtr1-gY# conf t
 rtr1-gY(config)# interface Loopback 999
 rtr1-gY(config-if)# shutdown
 </div></code></pre>
@@ -676,18 +602,43 @@ rtr1-gY(config)# exit
 rtr1-gY# write memory
 rtr1-gY# exit
 </div></code></pre>
-<p>Check the logs under <code>/var/log/remote-syslog</code></p>
-<pre class="hljs"><code><div>lab@srv1-g1:~$ <span class="hljs-built_in">cd</span> /var/<span class="hljs-built_in">log</span>/remote-syslog/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog$ ls
+<p>Verify that you are receiving emails to the sysadm user from Tenshi. A quick check is to look in the mail directory:</p>
+<pre class="hljs"><code><div>lab@srv1-gY:~$ ls -l /var/mail
 </div></code></pre>
-<p>...follow the directory trail</p>
-<p>Still no logs?</p>
-<p>Try the following command to send a test log message locally:</p>
-<pre class="hljs"><code><div>lab@srv1-g1:~<span class="hljs-variable">$logger</span> -p local0.info <span class="hljs-string">"Hello World\!"</span>
+<p><strong>Note</strong>: Tenshi checks <em><strong>/var/log/remote-syslog/consolidated.log</strong></em> once a minute, so you may have to wait up to a minute for the email to arrive to the <em><strong>lab</strong></em> user.</p>
+<p>Make sure you are logged in as <em><strong>lab</strong></em> (not root). Either open a new session to your virtual machine, or exit from the root user (exit). Then do:</p>
+<pre class="hljs"><code><div>root@srv1-gY:~<span class="hljs-comment"># su - lab</span>
 </div></code></pre>
-<p>If a file has not been created yet under <code>/var/log/remote-syslog</code>, then check your configuration for typos. Don't forget to restart the syslog-ng service each time you change the configuration.</p>
-<p>What other commands can you think of that you can run on the router (BE CAREFUL!) that will trigger syslog messages? You could try logging in on the router and typing an incorrect password for &quot;enable&quot;.</p>
-<p>Be sure that you do an &quot;ls&quot; command in your logging directory to see if a new log file has been created at some point.</p>
+<p>After becoming the <em><strong>lab</strong></em> user, run the &quot;mutt&quot; command to read the email</p>
+<pre class="hljs"><code><div>lab@srv1-gY:~$ mutt
+</div></code></pre>
+<p>Scroll up/down to select a message from &quot;tenshi@localhost&quot;, then press ENTER to view it, and q to quit and 'q' again to quit mutt.</p>
+<p>If mails are not arriving, then check the following:</p>
+<ul>
+<li>
+<p>Are logs arriving in the file <em><strong>/var/log/remote-syslog/consolidated.log</strong></em>?</p>
+<pre class="hljs"><code><div>lab@srv1-gY:~$ tail /var/<span class="hljs-built_in">log</span>/remote-syslog/consolidated.log
+</div></code></pre>
+</li>
+<li>
+<p>Do these logs show a hostname like 'rtr1-gY', or possibly an IP like 100.68.x.x ? Remember that the way we have configured tenshi, it only looks at hostnames or IP addresses matching the pattern 'rtr1-gY' or '100.68' (depending on how you configured tenshi).</p>
+</li>
+<li>
+<p>Check your tenshi configuration file. Restart tenshi if you change it.</p>
+</li>
+<li>
+<p>If you are still stuck ask an instructor or a neighbor for help.</p>
+</li>
+</ul>
+<hr>
+<h3 id="optional-add-a-new-tenshi-rule"><strong>Optional: Add a new Tenshi rule</strong></h3>
+<p>See if you can figure out how to add a rule to Tenshi so that an email is sent if someone enters an incorrect enable password on your router.</p>
+<p><strong>Hints</strong>:</p>
+<ul>
+<li>&quot;PRIV_AUTH_FAIL&quot; is the Cisco IOS log message in such cases.</li>
+<li>To test your new rule log in to your router, type &quot;enable&quot; and then enter an incorrect enable password.</li>
+<li>You will need to restart the Tenshi service once you have made your configuration changes.</li>
+</ul>
 <hr>
 
 </body>

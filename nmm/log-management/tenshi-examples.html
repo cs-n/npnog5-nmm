@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>exercises-log-management-syslog-ng.md</title>
+<title>tenshi-examples.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -421,273 +421,83 @@ void 0!==arguments[0]&&(br.sequenceConfig=arguments[0]),e=arguments[1]):e=argume
           : 'default'
     });
   </script>
-<h1 id="log-management-using-syslog-ng"><strong>Log management: Using syslog-ng</strong></h1>
-<h2 id="introduction"><strong>Introduction</strong></h2>
-<h3 id="goals"><strong>Goals</strong></h3>
+<h1 id="some-tenshi-examples"><strong>Some tenshi examples</strong></h1>
+<h2 id="notes-on-pattern-matching-regular-expressions"><strong>Notes on pattern matching (regular expressions)</strong></h2>
+<p>Match a single character:</p>
 <ul>
-<li>Learn how to use syslog-ng to manage logs</li>
+<li>. matches any character</li>
+<li>[abc] matches a, b or c (exactly one character)</li>
+<li>[0-9] matches any digit, short for [0123456789]</li>
+<li>[0-9a-z.] matches 0-9 or a-z or a dot</li>
+<li>\d is another way to match any digit</li>
+<li>\s matches any white space character (space or tab)</li>
 </ul>
-<h3 id="notes"><strong>Notes</strong></h3>
+<p>Repeats:</p>
 <ul>
-<li>Commands preceded with &quot;$&quot; imply that you should execute the command as a general user - not as root.</li>
-<li>Commands preceded with &quot;#&quot; imply that you should be working as root.</li>
-<li>Commands with more specific command lines (e.g. &quot;rtr1-gY&gt;&quot; or &quot;mysql&gt;&quot;) imply that you are executing commands on remote equipment, or within another program.</li>
+<li>Following an item with * matches any number of times (zero or more)</li>
+<li>Following an item with ? makes it optional (match zero or one times)</li>
+<li>Following an item with '+' makes it match one or more times</li>
 </ul>
-<hr>
-<h2 id="exercises"><strong>Exercises</strong></h2>
-<p>Please find your classmates that are using the same router as you. Get in to a group and do the following exercise together. That is, pick one person who will log in to your group's router, but all of you should assist with the actual configuration.</p>
-<h3 id="configure-your-routers-to-send-syslog-messages-to-your-shared-server-srv1-gy"><strong>Configure your routers to send syslog messages to your shared server (srv1-gY):</strong></h3>
-<p>Configure network devices below to send logs to srv1-gY.lab.workalaya.net (100.68.Y.254)</p>
+<p>Position:</p>
 <ul>
-<li>rtr1-gY.lab.workalaya.net</li>
-<li>vm1-gY</li>
-<li>vm2-gY</li>
-<li>vm3-gY</li>
+<li>^ matches start of line</li>
+<li>$ matches end of line</li>
 </ul>
-<p>You will SSH to your group's network devices and do the following:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
-</div></code></pre>
-<p>Repeat the next command &quot;logging 100.68.Y.254&quot; for each network device in your campus group.</p>
-<pre class="hljs"><code><div>rtr1-gY(config)# logging 100.68.Y.254
-rtr1-gY(config)# logging facility local0
-rtr1-gY(config)# logging userinfo
-rtr1-gY(config)# exit
-rtr1-gY# write memory
-</div></code></pre>
-<p>Now run 'show logging' to see the summary of the logging configuration.</p>
-<pre class="hljs"><code><div>rtr1-gY# show logging
-</div></code></pre>
-<p>Logout from the router (exit)</p>
-<pre class="hljs"><code><div>rtr1-gY# exit
-</div></code></pre>
-<p>That's it. The network device should now be sending UDP SYSLOG packets to your shared server (srv1-gY) on port 514. To verify this log in on your shared server:</p>
-<pre class="hljs"><code><div>lab@vmX-gY:~$ ssh lab@srv1-gY.lab.workalaya.net
-</div></code></pre>
-<p>and do the following:</p>
-<pre class="hljs"><code><div>rancid@srv1-gY:~$ sudo tcpdump -s0 -nv -i eth0 port 514
-</div></code></pre>
-<p>Then have one person in your group log back in on the network device and do the following:</p>
-<pre class="hljs"><code><div>$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
-rtr1-gY(config)# exit
-rtr1-gY# exit
-</div></code></pre>
-<p>You should see some output on your shared server's (srv1-gY) screen from TCPDUMP. It should look something like:</p>
-<pre class="hljs"><code><div>tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
-14:05:02.620767 IP (tos 0x0, ttl 254, id 43, offset 0, flags [none], proto UDP (17), length 215)
-    100.68.6.1.62222 &gt; 100.68.6.254.514: [udp sum ok] SYSLOG, length: 187
-        Facility local0 (16), Severity notice (5)
-        Msg: 466: Feb 22 14:05:01.545: %SSH-5-SSH2_USERAUTH: User <span class="hljs-string">'lab'</span> authentication <span class="hljs-keyword">for</span> SSH2 Session from 100.64.0.241 (tty = 2) using crypto cipher <span class="hljs-string">'aes128-cbc'</span>, hmac <span class="hljs-string">'hmac-sha1'</span> Succeeded
-</div></code></pre>
-<p>Now you can configure the logging software on your shared server (srv1) to receive this information and log it to a new set of files.</p>
-<hr>
-<h3 id="install-syslog-ng-using-ansible"><strong>Install syslog-ng using ansible</strong></h3>
-<p>Now login back to ansible control host.</p>
-<p>Create a new ansible playbook named <em><strong>syslog.yml</strong></em> to install syslog-ng and configure syslog-ng</p>
-<p>This ansilbe playbook will perform:</p>
+<p>Grouping:</p>
 <ul>
-<li>install syslog-ng and its dependencies</li>
-<li>configure syslog-ng to listen for remote syslog</li>
-<li>create directory to store remote syslog</li>
+<li>(....) groups together part of a pattern, so (....)? makes the whole part optional</li>
+<li>(xxx|yyy) matches pattern xxx or yyy</li>
 </ul>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi syslog.yml
+<p>Escaping:</p>
+<ul>
+<li>\. matches an actual dot</li>
+<li>[.] is another way to match an actual dot</li>
+<li>\[ and \] match the actual characters [ and ]</li>
+<li>\( and \) match the actual characters ( and )</li>
+</ul>
+<hr>
+<h2 id="discarding-messages"><strong>Discarding messages</strong></h2>
+<h3 id="discard-messages-matching-particular-patterns"><strong>Discard messages matching particular patterns</strong></h3>
+<p>Suppose we are not interested in the summary messages from nfcapd at all.</p>
+<pre class="hljs"><code><div>group ^nfcapd:
+trash Total ignored packets
+trash Ident:.*Flows:.*Packets:.*Bytes:.*Sequence Errors:.*Bad Packets
+group_end
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-attr">- hosts:</span> <span class="hljs-string">syslog_hosts</span>
-<span class="hljs-attr">  become:</span> <span class="hljs-literal">true</span>
-<span class="hljs-attr">  tasks:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
-<span class="hljs-attr">      apt:</span> <span class="hljs-string">update_cache=yes</span> <span class="hljs-string">cache_valid_time=3600</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">install</span> <span class="hljs-string">syslog-ng</span>
-<span class="hljs-attr">      package:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">"<span class="hljs-template-variable">{{ item }}</span>"</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">present</span>
-<span class="hljs-attr">      with_items:</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">syslog-ng</span>
-<span class="hljs-bullet">        -</span> <span class="hljs-string">syslog-ng-core</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">install</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">create</span> <span class="hljs-string">/var/log/remote-syslog</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">      file:</span>
-<span class="hljs-attr">        path:</span> <span class="hljs-string">/var/log/remote-syslog</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">directory</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">config</span>
-
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">enable</span> <span class="hljs-string">remote</span> <span class="hljs-string">syslog</span> <span class="hljs-string">settings</span>
-<span class="hljs-attr">      copy:</span>
-<span class="hljs-attr">        src:</span> <span class="hljs-string">files/syslog-ng/remote-log.conf</span>
-<span class="hljs-attr">        dest:</span> <span class="hljs-string">/etc/syslog-ng/conf.d/</span>
-<span class="hljs-attr">      notify:</span> <span class="hljs-string">restart</span> <span class="hljs-string">syslog-ng</span>
-<span class="hljs-attr">      tags:</span> <span class="hljs-string">config</span>
-
-<span class="hljs-attr">  handlers:</span>
-<span class="hljs-attr">    - name:</span> <span class="hljs-string">restart</span> <span class="hljs-string">syslog-ng</span>
-<span class="hljs-attr">      service:</span>
-<span class="hljs-attr">        name:</span> <span class="hljs-string">syslog-ng</span>
-<span class="hljs-attr">        state:</span> <span class="hljs-string">restarted</span>
+<p>Another example:</p>
+<pre class="hljs"><code><div>group ^sshd:
+trash ^sshd: Connection closed by.*\[preauth\]
+trash ^sshd: Received disconnect from
+trash ^sshd:.*from 100\.68\.100\.250
+group_end
 </div></code></pre>
-<p>update inventory/hosts as following</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi inventory/hosts
-</div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-section">[nagios_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[snmp_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[smokeping_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[rancid_hosts]</span>
-vmX-gY.lab.workalaya.net
-<span class="hljs-section">
-[nfsen_hosts]</span>
-vmX-gY.lab.workalaya.net
-srv1-gY.lab.workalaya.net
-<span class="hljs-section">
-[syslog_hosts]</span>
-srv1-gY.lab.workalaya.net
-</div></code></pre>
-<p>create syslog-ng config file name <em><strong>remote-log.conf</strong></em> inside <em><strong>file/syslog-ng</strong></em></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ mkdir -p files/syslog-ng
-(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi files/syslog-ng/remote-log.conf
-</div></code></pre>
-<p>copy and paste folowing content and save</p>
-<pre class="hljs"><code><div>source s_net {
-    udp(ip(0.0.0.0) port(514));
-    tcp(ip(0.0.0.0) port(514));
-};
-
-destination remote-log {
-    file(&quot;/var/log/remote-syslog/${HOST}/${YEAR}/${MONTH}/${DAY}/${FACILITY}.log&quot;
-        owner(root) group(root) perm(0644) dir_perm(0755) create_dirs(yes)
-    );
-};
-
-log {
-    source(s_net);
-    destination(remote-log);
-};
-</div></code></pre>
-<p>Now run ansible playbook to install <em><strong>syslog-ng</strong></em></p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ ansible-playbook syslog.yml
-
-PLAY [syslog_hosts] *****************************************************************************************************************************************
-
-TASK [Gathering Facts] **************************************************************************************************************************************
-ok: [vmX-gY.lab.workalaya.net]
-
-TASK [ensure package cache is up to date] *******************************************************************************************************************
-[WARNING]: Could not find aptitude. Using apt-get instead
-
-changed: [vmX-gY.lab.workalaya.net]
-
-TASK [install syslog-ng] ************************************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net] =&gt; (item=syslog-ng)
-ok: [vmX-gY.lab.workalaya.net] =&gt; (item=syslog-ng-core)
-
-TASK [create /var/<span class="hljs-built_in">log</span>/remote-syslog directory] **************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net]
-
-TASK [<span class="hljs-built_in">enable</span> remote syslog settings] ************************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net]
-
-RUNNING HANDLER [restart syslog-ng] *************************************************************************************************************************
-changed: [vmX-gY.lab.workalaya.net]
-
-PLAY RECAP **************************************************************************************************************************************************
-vmX-gY.lab.workalaya.net   : ok=6    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+<h3 id="discard-messages-from-a-specific-host"><strong>Discard messages from a specific host</strong></h3>
+<p>Suppose we want to discard messages matching a particular pattern but only if they come from a particular host</p>
+<pre class="hljs"><code><div>group_host ^100\.68\.100\.254$
+trash ^dhcpd:
+trash ^charon:
+trash ^filterlog:
+trash ^check_reload_status: Reloading filter
+trash ^check_reload_status: Restarting ipsec tunnels
+trash ^check_reload_status: Restarting OpenVPN tunnels
+trash ^check_reload_status: Syncing firewall
+group_end
 </div></code></pre>
 <hr>
-<h3 id="test-syslog"><strong>Test syslog</strong></h3>
-<p>To be sure there are some logging messages log back in to the network device, and run some &quot;config&quot; commands, then logout. e.g.</p>
-<pre class="hljs"><code><div>$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
-rtr1-gY(config)# exit
-rtr1-gY# exit
+<h2 id="summarising-similar-messages"><strong>Summarising similar messages</strong></h2>
+<p>If a pattern is defined within parentheses <code>( ... )</code> then it will be removed, so that multiple similar messages may be reported as a single message.</p>
+<p>For example, suppose you get lots of messages like this:</p>
+<pre class="hljs"><code><div>1: sshd: Connection closed by 100.68.6.131 port 38060 [preauth]
+1: sshd: Connection closed by 100.68.6.132 port 39308 [preauth]
+1: sshd: Connection closed by 100.68.4.133 port 50620 [preauth]
+1: sshd: Connection closed by 100.68.4.134 port 58252 [preauth]
 </div></code></pre>
-<p>Be sure you log out of the network device. If too many people log in without logging out then others cannot gain access to the network device.</p>
-<hr>
-<h3 id="on-your-shared-server-srv1-see-if-messages-are-starting-to-appear-under-varlognetworkremote-log"><strong>On your shared server (srv1), See if messages are starting to appear under /var/log/network/remote-log/</strong></h3>
-<pre class="hljs"><code><div>lab@srv1-g1:~$ <span class="hljs-built_in">cd</span> /var/<span class="hljs-built_in">log</span>/remote-syslog/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog$ ls
-100.68.1.1 100.68.1.21 100.68.1.22 100.68.1.23
-
-... above will show you the directory showing all remote hosts
-
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog$ <span class="hljs-built_in">cd</span> 100.68.1.1/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1$ ls
-2019
-
-... above will show you the directory <span class="hljs-keyword">for</span> the year
-
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1$ <span class="hljs-built_in">cd</span> 2019/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019$ ls
-10 11
-
-... above will show you the directory <span class="hljs-keyword">for</span> the month
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019$ <span class="hljs-built_in">cd</span> 11
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11$ ls
-22 23 24
-
-... above will show you the day of the month
-
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11$ <span class="hljs-built_in">cd</span> 24
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11/24$ ls
-local0.log  local7.log
-
-... above will show you the router<span class="hljs-string">'s log
-</span></div></code></pre>
-<p>You can view the resulting log file by using a pager program such as less, more, cat, etc...</p>
-<p>You will see the logging is capture like below;</p>
-<pre class="hljs"><code><div>lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog/100.68.1.1/2019/11/24$ less local0.log
-
-Nov 24 18:49:32 100.68.1.1 %SYS-5-CONFIG_I: Configured from console by lab on vty0 (100.68.1.21)
-Nov 24 18:51:06 100.68.1.1 %SYS-5-CONFIG_I: Configured from console by lab on vty0 (100.68.1.21)
-Nov 24 18:53:59 100.68.1.1 %SSH-5-SSH2_SESSION: SSH2 Session request from 100.68.100.250 (tty = 1) using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> Failed
-Nov 24 18:53:59 100.68.1.1 %SSH-5-SSH2_CLOSE: SSH2 Session from 100.68.100.250 (tty = 1) <span class="hljs-keyword">for</span> user <span class="hljs-string">''</span> using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> closed
-Nov 24 18:58:59 100.68.1.1 %SSH-5-SSH2_SESSION: SSH2 Session request from 100.68.100.250 (tty = 1) using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> Failed
-Nov 24 18:58:59 100.68.1.1 %SSH-5-SSH2_CLOSE: SSH2 Session from 100.68.100.250 (tty = 1) <span class="hljs-keyword">for</span> user <span class="hljs-string">''</span> using crypto cipher <span class="hljs-string">''</span>, hmac <span class="hljs-string">''</span> closed
-Nov 24 19:01:12 100.68.1.1 %SSH-5-SSH2_CLOSE: SSH2 Session from 100.68.1.21 (tty = 0) <span class="hljs-keyword">for</span> user <span class="hljs-string">'lab'</span> using crypto cipher <span class="hljs-string">'aes128-cbc'</span>, hmac <span class="hljs-string">'hmac-sha1'</span> closed
+<p>and you want to combine them in a single summary line for tenshi. Try:</p>
+<pre class="hljs"><code><div>misc ^sshd: Connection closed by ([0-9.]+) port (\d+) \[preauth\]
 </div></code></pre>
-<hr>
-<h2 id="troubleshooting"><strong>Troubleshooting</strong></h2>
-<p>If no files are appearing under the <code>/var/log/remote-syslog</code> directory, then another command to try while logged into the router, in config mode, is to shutdown / no shutdown a Loopback interface, for example:</p>
-<pre class="hljs"><code><div>$ ssh lab@rtr1-gY.lab.workalaya.net
-rtr1-gY&gt; enable
-rtr1-gY# config terminal
-rtr1-gY(config)# interface Loopback 999
-rtr1-gY(config-if)# shutdown
+<p>Then you should get in your tenshi report:</p>
+<pre class="hljs"><code><div>4: sshd: Connection closed by  port  [preauth]
 </div></code></pre>
-<p>wait a few seconds</p>
-<pre class="hljs"><code><div>rtr1-gY(config-if)# no shutdown
-</div></code></pre>
-<p>Then exit, and save the config (&quot;write mem&quot;):</p>
-<pre class="hljs"><code><div>rtr1-gY(config-if)# exit
-rtr1-gY(config)# exit
-rtr1-gY# write memory
-rtr1-gY# exit
-</div></code></pre>
-<p>Check the logs under <code>/var/log/remote-syslog</code></p>
-<pre class="hljs"><code><div>lab@srv1-g1:~$ <span class="hljs-built_in">cd</span> /var/<span class="hljs-built_in">log</span>/remote-syslog/
-lab@srv1-g1:/var/<span class="hljs-built_in">log</span>/remote-syslog$ ls
-</div></code></pre>
-<p>...follow the directory trail</p>
-<p>Still no logs?</p>
-<p>Try the following command to send a test log message locally:</p>
-<pre class="hljs"><code><div>lab@srv1-g1:~<span class="hljs-variable">$logger</span> -p local0.info <span class="hljs-string">"Hello World\!"</span>
-</div></code></pre>
-<p>If a file has not been created yet under <code>/var/log/remote-syslog</code>, then check your configuration for typos. Don't forget to restart the syslog-ng service each time you change the configuration.</p>
-<p>What other commands can you think of that you can run on the router (BE CAREFUL!) that will trigger syslog messages? You could try logging in on the router and typing an incorrect password for &quot;enable&quot;.</p>
-<p>Be sure that you do an &quot;ls&quot; command in your logging directory to see if a new log file has been created at some point.</p>
 <hr>
 
 </body>
