@@ -521,13 +521,12 @@ img {
 <li>Web interface for viewing status, browsing history,
 scheduling downtime etc</li>
 <li>Sends out alerts via E-mail. Can be configured to use other mechanisms, e.g. SMS</li>
-</ul>
-<hr>
-<h2 id="introduction-contd">Introduction (Contd...)</h2>
-<p>Nagios actively monitors the <em><strong>availability</strong></em> of</p>
+<li>Nagios actively monitors the <em><strong>availability</strong></em> of
 <ul>
 <li>Hosts (devices)</li>
 <li>Services</li>
+</ul>
+</li>
 </ul>
 <hr>
 <style scoped>
@@ -719,211 +718,50 @@ h3 {
 <h3 id="fit---httpnoclabworkalayanetnagios3"><!--fit--> <a href="http://noc.lab.workalaya.net/nagios3/">http://noc.lab.workalaya.net/nagios3/</a></h3>
 <p>nagioisadmin/&lt;lab_password&gt;</p>
 <hr>
-<h2 id="installation">Installation</h2>
+<h2 id="more-features">More Features</h2>
 <ul>
-<li>A bundle of related tasks/handlers/templates</li>
-</ul>
-<p><strong>roles/</strong><em>&lt;rolename&gt;</em><strong>/tasks/main.yml</strong>
-<strong>roles/</strong><em>&lt;rolename&gt;</em><strong>/handlers/main.yml</strong>
-<strong>roles/</strong><em>&lt;rolename&gt;</em><strong>/defaults/main.yml</strong>
-<strong>roles/</strong><em>&lt;rolename&gt;</em><strong>/files/...</strong>
-<strong>roles/</strong><em>&lt;rolename&gt;</em><strong>/templates/...</strong></p>
+<li>Allows you to acknowledge an event
 <ul>
-<li>Recommended way to make re-usable configs</li>
-<li>Not all these files need to be present</li>
-</ul>
-<hr>
-<h2 id="ansible-tags">Ansible Tags</h2>
-<ul>
-<li>Each role or individual task can be labelled with one or more &quot;tags&quot;</li>
-<li>When you run a playbook, you can tell it only to run tasks with a particular tag: -t &lt;tag&gt;</li>
-<li>Lets you selectively run parts of playbooks</li>
-</ul>
-<hr>
-<h2 id="ansible-inventory">Ansible Inventory</h2>
-<ul>
-<li>Lists all hosts which Ansible may manage</li>
-<li>Simple &quot;INI&quot; format, not YAML</li>
-<li>Can define groups of hosts</li>
-<li>Default is /etc/ansible/hosts
-<ul>
-<li>Can override using -i &lt;filename&gt;</li>
+<li>A user can add comments via the GUI</li>
 </ul>
 </li>
-</ul>
-<hr>
-<style scoped>
-pre {
-    font-size: 85%;
-}
-</style>
-<h2 id="inventory-hosts-example">Inventory (hosts) example</h2>
-<pre class="hljs"><code><div><span class="hljs-section">[dns_servers]</span>          &lt;-- Name of group
-ns1.lab.workalaya.net  &lt;-- Hosts in this group
-ns2.lab.workalaya.net
-<span class="hljs-section">
-[vms]</span>
-vm1-g1.lab.workalaya.net
-vm1-g1.lab.workalaya.net
-<span class="hljs-section">
-[nagios_server]</span>
-noc.lab.workalaya.net
-vm1-g1.lab.workalaya.net
-vm1-g1.lab.workalaya.net
-</div></code></pre>
-<pre class="hljs"><code><div>Note:
-- the same host can be listed under multiple groups.
-- Group &quot;all&quot; is created automatically
-</div></code></pre>
-<hr>
-<h2 id="inventory-variables">Inventory variables</h2>
+<li>You can define maintenance periods
 <ul>
-<li>You can set variables on hosts or groups of hosts</li>
-<li>Variables can make tasks behave differently when applied to different hosts</li>
-<li>Variables can be inserted into templates</li>
-<li>Some variables control how Ansible connects</li>
-</ul>
-<hr>
-<h2 id="setting-host-vars">Setting host vars</h2>
-<ul>
-<li>
-<p>Directly in the inventory (hosts) file</p>
-<pre class="hljs"><code><div><span class="hljs-section">[core_servers]</span>
-ns1.lab.workalaya.net ansible_connection=local
-ns2.lab.workalaya.net
-</div></code></pre>
-</li>
-<li>
-<p>In file host_vars/pc2.example.com</p>
-<pre class="hljs"><code><div><span class="hljs-attr">ansible_ssh_host:</span> <span class="hljs-number">10.10</span><span class="hljs-number">.0</span><span class="hljs-number">.241</span>
-<span class="hljs-attr">ansible_ssh_user:</span> <span class="hljs-string">root</span>
-<span class="hljs-attr">flurble:</span>
-<span class="hljs-bullet">  -</span> <span class="hljs-string">foo</span>
-<span class="hljs-bullet">  -</span> <span class="hljs-string">bar</span>
-</div></code></pre>
-<ul>
-<li>This is in YAML and is preferred</li>
+<li>By device or a group of devices</li>
 </ul>
 </li>
-</ul>
-<hr>
-<h2 id="setting-group-vars">Setting group vars</h2>
+<li>Maintains availability statistics and generates reports</li>
+<li>Can detect flapping and suppress additional notifications</li>
+<li>Allows for multiple notification methods:
 <ul>
-<li>
-<p><strong>group_vars/dns_servers</strong></p>
-<pre class="hljs"><code><div><span class="hljs-comment"># More YAML</span>
-<span class="hljs-attr">flurble:</span>
-<span class="hljs-bullet">  -</span> <span class="hljs-string">foo-foo</span>
-<span class="hljs-bullet">  -</span> <span class="hljs-string">bar-foo</span>
-</div></code></pre>
-</li>
-<li>
-<p><strong>group_vars/all</strong></p>
-<pre class="hljs"><code><div><span class="hljs-comment"># More YAML, applies to every host</span>
-<span class="hljs-attr">ansible_ssh_user:</span> <span class="hljs-string">lab</span>
-<span class="hljs-attr">ansible_beccome_pass:</span> <span class="hljs-string">yourpass</span>
-</div></code></pre>
-</li>
+<li>e-mail, pager, SMS, winpopup, audio, etc...</li>
 </ul>
-<pre class="hljs"><code><div>Note: host vars take priority over group vars
-</div></code></pre>
-<hr>
-<h2 id="ansible-facts">Ansible Facts</h2>
-<ul>
-<li>Facts are variables containing information collected automatically about the target host</li>
-<li>Things like what OS is installed, what interfaces it has, what disk drives it has</li>
-<li>Can be used to adapt roles automatically to the target system</li>
-<li>Gathered every time Ansible connects to a host (unless playbook has &quot;gather_facts: no&quot;)</li>
-</ul>
-<hr>
-<style scoped>
-pre {
-    font-size: 85%;
-}
-</style>
-<h2 id="showing-facts">Showing facts</h2>
-<pre class="hljs"><code><div>~$ ansible vmX-gY.lab.workalaya.net -m setup | less
-
-vmX-gY.lab.workalaya.net | SUCCESS =&gt; {
-    <span class="hljs-string">"ansible_facts"</span>: {
-        <span class="hljs-string">"ansible_all_ipv4_addresses"</span>: [
-            <span class="hljs-string">"100.68.X.21"</span>
-        ],
-        <span class="hljs-string">"ansible_architecture"</span>: <span class="hljs-string">"x86_64"</span>,
-        <span class="hljs-string">"ansible_bios_date"</span>: <span class="hljs-string">"12/12/2018"</span>,
-        <span class="hljs-string">"ansible_bios_version"</span>: <span class="hljs-string">"6.00"</span>,
-        <span class="hljs-string">"ansible_cmdline"</span>: {
-            <span class="hljs-string">"BOOT_IMAGE"</span>: <span class="hljs-string">"/boot/vmlinuz-4.15.0-58-generic"</span>,
-            <span class="hljs-string">"ro"</span>: <span class="hljs-literal">true</span>,
-            <span class="hljs-string">"root"</span>: <span class="hljs-string">"/dev/mapper/lab--main--vg-root"</span>
-        },
-        <span class="hljs-string">"ansible_date_time"</span>: {
-            <span class="hljs-string">"date"</span>: <span class="hljs-string">"2019-11-13"</span>,
-            <span class="hljs-string">"day"</span>: <span class="hljs-string">"13"</span>,
-            <span class="hljs-string">"epoch"</span>: <span class="hljs-string">"1573634010"</span>,
-</div></code></pre>
-<hr>
-<h2 id="jinja2-template-examples">jinja2 template examples</h2>
-<ul>
-<li>
-<p>Insert a variable into text</p>
-<pre class="hljs"><code><div>INTERFACES=&quot;{{ dhcp_interfaces }}&quot;
-</div></code></pre>
 </li>
-<li>
-<p>Looping over lists</p>
-<pre class="hljs"><code><div>search lab.workalaya.net
-{% for host in dns_servers %}
-nameserver {{ host }}
-{% endfor %}
-</div></code></pre>
-</li>
-</ul>
-<hr>
-<h2 id="many-other-cool-features">Many other cool features</h2>
-<ul>
-<li>
-<p>conditionals</p>
-<pre class="hljs"><code><div><span class="hljs-attr">- action:</span> <span class="hljs-string">package</span> <span class="hljs-string">name=apache2</span> <span class="hljs-string">state=present</span>
-<span class="hljs-attr">  when:</span> <span class="hljs-string">ansible_os_family=='Debian'</span>
-</div></code></pre>
-</li>
-<li>
-<p>Loops</p>
-<pre class="hljs"><code><div><span class="hljs-attr">- action:</span> <span class="hljs-string">package</span> <span class="hljs-string">name={{item}}</span> <span class="hljs-string">state=present</span>
-<span class="hljs-attr">  with_items:</span>
-<span class="hljs-bullet">    -</span> <span class="hljs-string">openssh-server</span>
-<span class="hljs-bullet">    -</span> <span class="hljs-string">rsync</span>
-<span class="hljs-bullet">    -</span> <span class="hljs-string">telnet</span>
-</div></code></pre>
-</li>
-</ul>
-<hr>
-<h2 id="getting-up-to-date-ansible">Getting up-to-date Ansible</h2>
-<ul>
-<li>
-<p>Your package manager's version may be old</p>
-</li>
-<li>
-<p>For Ubuntu LTS: use the PPA</p>
-<pre class="hljs"><code><div>apt-get install python-software-properties
-add-apt-repository ppa:rquillo/ansible
-apt-get update
-apt-get install ansible
-</div></code></pre>
-</li>
-<li>
-<p>or, if using python venv</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-gY:~/ansible-playbook$ pip install --upgrade ansible
-</div></code></pre>
-</li>
+<li>Allows you to define notification levels for escalation</li>
 </ul>
 <hr>
 <h2 id="more-info-and-documentation">More info and documentation</h2>
 <ul>
-<li><a href="https://docs.ansible.com/">https://docs.ansible.com/</a></li>
-<li><a href="https://jinja.palletsprojects.com/">https://jinja.palletsprojects.com/</a></li>
-<li><a href="https://yaml.org/">https://yaml.org/</a></li>
+<li>
+<p>Nagios web site
+<a href="https://www.nagios.org/">https://www.nagios.org/</a></p>
+</li>
+<li>
+<p>Nagios plugins site
+<a href="https://nagios-plugins.org/">https://nagios-plugins.org/</a></p>
+</li>
+<li>
+<p>Nagios Exchange site
+<a href="https://exchange.nagios.org/">https://exchange.nagios.org/</a></p>
+</li>
+<li>
+<p>A Debian tutorial on Nagios
+<a href="http://www.debianhelp.co.uk/nagios.htm">http://www.debianhelp.co.uk/nagios.htm</a></p>
+</li>
+<li>
+<p>Commercial Nagios support
+<a href="http://www.nagios.com/">http://www.nagios.com/</a></p>
+</li>
 </ul>
 <hr>
 <!--
