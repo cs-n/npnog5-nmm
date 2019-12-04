@@ -499,6 +499,93 @@ screen -r
 <pre class="hljs"><code><div>telnet localhost 2001
 </div></code></pre>
 <p>to exit from telnet session press <code>ctrl+]</code> then <code>ctrl+d</code> or type <code>quit</code>.</p>
+<hr>
+<h3 id="lxd-linux-containers">LXD (Linux Containers)</h3>
+<h4 id="list-all-image-remote">List All image (remote)</h4>
+<pre class="hljs"><code><div>lxc image list images:
+</div></code></pre>
+<h4 id="list-all-local-image">List all local image</h4>
+<pre class="hljs"><code><div>lxc image list
+</div></code></pre>
+<h4 id="create-a-container">create a container</h4>
+<pre class="hljs"><code><div>lxc launch images:centos/7/amd64 centos7
+
+lxc launch ubuntu:18.04 ubuntu1804
+</div></code></pre>
+<h4 id="list-container">list container</h4>
+<pre class="hljs"><code><div>lxc list
+</div></code></pre>
+<h4 id="start-container">start container</h4>
+<pre class="hljs"><code><div>lxc start ubuntu1804
+</div></code></pre>
+<h4 id="stop-container">stop container</h4>
+<pre class="hljs"><code><div>lxc stop ubuntu1804
+</div></code></pre>
+<h4 id="destroy-container">destroy container</h4>
+<pre class="hljs"><code><div>lxc delete ubuntu1804
+</div></code></pre>
+<h4 id="attach-connect-to-container-console-shell">attach / connect to container console / shell</h4>
+<pre class="hljs"><code><div>lxc <span class="hljs-built_in">exec</span> ubuntu1804 -- bash
+
+lxc <span class="hljs-built_in">exec</span> ubuntu1804 bash
+</div></code></pre>
+<p>Or just run a command directly:</p>
+<pre class="hljs"><code><div>lxc <span class="hljs-built_in">exec</span> ubuntu1804 -- apt-get update
+</div></code></pre>
+<h4 id="to-pull-a-file-from-the-container-use">To pull a file from the container, use</h4>
+<pre class="hljs"><code><div>lxc file pull ubuntu1804/etc/hosts .
+</div></code></pre>
+<h4 id="to-push-one-use">To push one, use</h4>
+<pre class="hljs"><code><div>lxc file push hosts ubuntu1804/tmp/
+</div></code></pre>
+<h4 id="using-the-built-in-image-remotes">Using the built-in image remotes</h4>
+<p>LXD comes with 3 default remotes providing images:</p>
+<p>ubuntu: (for stable Ubuntu images)
+ubuntu-daily: (for daily Ubuntu images)
+images: (for a bunch of other distros)</p>
+<h4 id="using-a-remote-lxd-as-an-image-server">Using a remote LXD as an image server</h4>
+<p>Using a remote image server is as simple as adding it as a remote and just using it:</p>
+<pre class="hljs"><code><div>lxc remote add my-images 1.2.3.4
+lxc launch my-images:image-name your-container
+</div></code></pre>
+<p>An image list can be obtained with:</p>
+<pre class="hljs"><code><div>lxc image list my-images:
+</div></code></pre>
+<h4 id="create-image-alias">create image alias</h4>
+<pre class="hljs"><code><div>lxc image <span class="hljs-built_in">alias</span> create &lt;image <span class="hljs-built_in">alias</span>&gt; &lt;image FINGERPRINT&gt;
+lxc image <span class="hljs-built_in">alias</span> create ubuntu 028d045b1cfc
+</div></code></pre>
+<h4 id="manually-importing-an-image">Manually importing an image</h4>
+<p>If you already have a lxd-compatible image file, you can import it with:</p>
+<pre class="hljs"><code><div>lxc image import \&lt;file&gt; --<span class="hljs-built_in">alias</span> my-alias
+</div></code></pre>
+<p>And then start a container using:</p>
+<pre class="hljs"><code><div>lxc launch my-alias my-container
+</div></code></pre>
+<h4 id="multiple-hosts">Multiple hosts</h4>
+<p>The &quot;lxc&quot; command line tool can talk to multiple LXD servers and defaults to talking to the local one.</p>
+<p>Remote operations require the following two commands having been run on the remote server:</p>
+<pre class="hljs"><code><div>lxc config <span class="hljs-built_in">set</span> core.https_address <span class="hljs-string">"[::]"</span>
+lxc config <span class="hljs-built_in">set</span> core.trust_password some-password
+</div></code></pre>
+<p>The former tells LXD to bind all addresses on port 8443. The latter sets a trust password to be used by new clients.</p>
+<p>Now to talk to that remote LXD, you can simply add it with:</p>
+<pre class="hljs"><code><div>lxc remote add host<span class="hljs-_">-a</span> \&lt;ip address or DNS&gt;
+</div></code></pre>
+<p>This will prompt you to confirm the remote server fingerprint and then ask you for the password.</p>
+<p>And after that, use all the same command as above but prefixing the container and images name with the remote host like:</p>
+<pre class="hljs"><code><div>lxc <span class="hljs-built_in">exec</span> host<span class="hljs-_">-a</span>:ubuntu1804 -- apt-get update
+</div></code></pre>
+<h4 id="install-lxd-client-on-mac-os-x">Install lxd client on Mac OS X</h4>
+<pre class="hljs"><code><div>brew install lxc
+</div></code></pre>
+<h4 id="to-configure-%E2%80%98lxc-client%E2%80%99-on-our-laptop-to-manage-lxd-follow-above-multiple-hosts">to configure ‘lxc client’ on our laptop to manage LXD follow above # multiple hosts</h4>
+<pre class="hljs"><code><div>lxc remote <span class="hljs-built_in">set</span>-default host<span class="hljs-_">-a</span>
+</div></code></pre>
+<h4 id="lxc-password-for-1921681120">lxc password for 192.168.1.120</h4>
+<pre class="hljs"><code><div>Gl4wZMK1sTzDvsrjcqn1meWFaWYjxdZrpqoIyA6ha6fJLUDMbJTiR04CxD3AAJbIJJTXh8XgJeEizQQsvpKCbhFK6H0OajwWS0Wu
+</div></code></pre>
+<h4 id="for-creating-custom-lxd-image-follow-create-custom-image-for-lxdtxt">for creating custom lxd image follow &quot;create custom image for lxd.txt&quot;</h4>
 
 </body>
 </html>
