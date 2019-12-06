@@ -1,0 +1,30 @@
+--- libexec/NfProfile.pm.orig	2014-06-23 19:27:50.000000000 +0000
++++ libexec/NfProfile.pm	2019-07-13 17:12:58.529194255 +0000
+@@ -1187,7 +1187,7 @@
+ } # End of GetProfilegroups
+ 
+ sub DoRebuild {
+-	my $socket		 = shift;
++	#my $socket		 = shift;
+ 	my $profileinfo  = shift;
+ 	my $profile 	 = shift;
+ 	my $profilegroup = shift;
+@@ -1343,7 +1343,7 @@
+ 				$completed = 100;
+ 			}
+ 			if ( ($counter % $modulo ) == 0 ) {
+-				print $socket ".info Rebuilding Profile '$profile': Completed: $completed\%\n";
++				#print $socket ".info Rebuilding Profile '$profile': Completed: $completed\%\n";
+ 				syslog('info', "Rebuilding Profile '$profile': Completed: $completed\%");
+ 			}
+ 
+@@ -2944,7 +2944,8 @@
+ 		
+ 	syslog('info', "Start to rebuild profile '$profile'");
+ 
+-	my $status = DoRebuild($socket, \%profileinfo, $profile, $profilegroup, $profilepath, 0, $RebuildGraphs);
++	#my $status = DoRebuild($socket, \%profileinfo, $profile, $profilegroup, $profilepath, 0, $RebuildGraphs);
++	my $status = DoRebuild(\%profileinfo, $profile, $profilegroup, $profilepath, 0, $RebuildGraphs);
+ 
+ 	if ( !WriteProfile(\%profileinfo) ) {
+ 		syslog('err', "Error writing profile '$profile': $Log::ERROR");
