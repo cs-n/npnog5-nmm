@@ -774,6 +774,7 @@ define host {
     host_name   gw-rtr
     alias       LAB Transit Provider Router
     address     gw-rtr.lab.workalaya.net
+    hostgroups  routers
 }
 
 define host {
@@ -781,6 +782,7 @@ define host {
     host_name   rtr1-g{{class_group}}
     alias       Group {{class_group}}  Router
     address     rtr1-g{{class_group}}.lab.workalaya.net
+    hostgroups  routers
 }
 </div></code></pre>
 <p>and Update <strong><em>templates/nagios/vms.cfg</em></strong> as</p>
@@ -866,7 +868,7 @@ define host {
 }
 </div></code></pre>
 <p>and Update <strong><em>templates/nagios/vms.cfg</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/vmss.cfg
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/vms.cfg
 </div></code></pre>
 <pre class="hljs"><code><div>define hostgroup {
     hostgroup_name vms

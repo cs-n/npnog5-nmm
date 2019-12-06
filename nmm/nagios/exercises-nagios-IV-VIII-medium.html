@@ -468,7 +468,7 @@ define host {
 }
 </div></code></pre>
 <p>and Adding Parents to <strong><em>templates/nagios/vms.cfg</em></strong> as</p>
-<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/vmss.cfg
+<pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/vms.cfg
 </div></code></pre>
 <pre class="hljs"><code><div>define hostgroup {
     hostgroup_name vms
@@ -532,7 +532,7 @@ vmX-gY.lab.workalaya.com   : ok=4    changed=3    unreachable=0    failed=0    s
 /usr/share/nagios/htdocs/images/logos/cook/router.*
 /usr/share/nagios/htdocs/images/logos/cook/switch.*
 </div></code></pre>
-<p>The next step is to edit the file <strong><em>templates/nagios/vms.cfg</em></strong>  and tell nagios what image you would like to use to represent your devices.</p>
+<p>The next step is to edit the file <strong><em>templates/nagios/routers.cfg</em></strong>  and tell nagios what image you would like to use to represent your devices.</p>
 <pre class="hljs"><code><div>(venv) vmX-gY@ansible-host:~/ansible-playbook$ vi templates/nagios/routers.cfg
 </div></code></pre>
 <p>Here is what an entry for your routers looks like (there is already an entry for debian-servers that will work as is). Note that the router model (3600) is not all that important. The image used represents a router in general.</p>
