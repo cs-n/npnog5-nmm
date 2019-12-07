@@ -589,7 +589,7 @@ _paginate: false
 <h2 id="workshop-agenda">Workshop Agenda</h2>
 <h3 id="agenda-course-materials">Agenda / Course Materials</h3>
 <ul>
-<li><a href="http://www.lab.workalaya.net/">http://www.lab.workalaya.net/</a></li>
+<li><a href="http://npnog5.chatur.com.np/">http://npnog5.chatur.com.np/</a></li>
 </ul>
 <h3 id="during-the-workshop">During the workshop</h3>
 <ul>
@@ -621,83 +621,495 @@ pre {
 </style>
 <h2 id="single-group-detail">Single Group Detail</h2>
 <p><img src="../images/nmm_group_detail.jpg" alt="img h:460px"></p>
-<pre class="hljs"><code><div><span class="hljs-string">Services</span>
-<span class="hljs-bullet">-</span><span class="hljs-bullet">-------</span>
-<span class="hljs-attr">DNS:</span> <span class="hljs-number">100.68</span><span class="hljs-number">.100</span><span class="hljs-number">.244</span> <span class="hljs-number">100.68</span><span class="hljs-number">.100</span><span class="hljs-number">.245</span>
-<span class="hljs-attr">apt-cacher:</span> <span class="hljs-number">100.68</span><span class="hljs-number">.100</span><span class="hljs-number">.254</span>
+<pre class="hljs"><code><div>Services
+--------
+DNS: 100.68.100.244 100.68.100.245
+apt-cacher: 100.68.100.254
 </div></code></pre>
-<pre class="hljs"><code><div><span class="hljs-string">Network</span> <span class="hljs-string">Devices</span>
-<span class="hljs-bullet">-</span><span class="hljs-bullet">--------------</span>
-<span class="hljs-string">gw-rtr.lab.workalaya.net:</span> <span class="hljs-number">100.68</span><span class="hljs-number">.100</span><span class="hljs-number">.254</span>
-<span class="hljs-string">rtr1.lab.workalaya.net:</span> <span class="hljs-number">100.68</span><span class="hljs-number">.100</span><span class="hljs-number">.1</span>
+<pre class="hljs"><code><div>Network Devices
+---------------
+gw-rtr.lab.workalaya.net: 100.68.100.254
+rtr1.lab.workalaya.net: 100.68.100.1
 </div></code></pre>
 <pre class="hljs"><code><div>Group Servers
 -------------
-srv1-g1.lab.workalaya.net: <span class="hljs-number">100.68</span><span class="hljs-number">.1</span><span class="hljs-number">.254</span>
-vm[<span class="hljs-number">1.</span><span class="hljs-number">.6</span>]-g1.lab.workalaya.net: <span class="hljs-number">100.68</span><span class="hljs-number">.1</span><span class="hljs-number">.2</span>[<span class="hljs-number">1.</span><span class="hljs-number">.6</span>]
-ansible-g1.lab.workalaya.net: <span class="hljs-number">100.68</span><span class="hljs-number">.1</span><span class="hljs-number">.253</span>
+srv1-g1.lab.workalaya.net: 100.68.1.254
+vm[1-4]-g1.lab.workalaya.net: 100.68.1.2[1-4]
+ansible-g1.lab.workalaya.net: 100.68.1.253
 </div></code></pre>
 <hr>
+<style scoped>
+table{
+    font-size: 50%;
+}
+</style>
 <h2 id="group-details">Group Details</h2>
-<pre class="hljs"><code><div>|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| Group 1                                        |  Group 2                                       | Group 3                                        |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| rtr1-g1.lab.workalaya.net    | 100.68.100.1    | rtr1-g2.lab.workalaya.net    | 100.68.100.2    | rtr1-g3.lab.workalaya.net    | 100.68.100.3    |
-| vm1-g1.lab.workalaya.net     | 100.68.1.21     | vm1-g2.lab.workalaya.net     | 100.68.2.21     | vm1-g3.lab.workalaya.net     | 100.68.3.21     |
-| vm2-g1.lab.workalaya.net     | 100.68.1.22     | vm2-g2.lab.workalaya.net     | 100.68.2.22     | vm2-g3.lab.workalaya.net     | 100.68.3.22     |
-| vm3-g1.lab.workalaya.net     | 100.68.1.23     | vm3-g2.lab.workalaya.net     | 100.68.2.23     | vm3-g3.lab.workalaya.net     | 100.68.3.23     |
-| srv1-g1.lab.workalaya.net    | 100.68.1.254    | srv1-g2.lab.workalaya.net    | 100.68.2.254    | srv1-g3.lab.workalaya.net    | 100.68.3.254    |
-| ansible-g1.lab.workalaya.net | 100.68.1.253    | ansible-g2.lab.workalaya.net | 100.68.2.253    | ansible-g3.lab.workalaya.net | 100.68.3.253    |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| Group 4                                        |  Group 5                                       | Group 6                                        |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| rtr1-g4.lab.workalaya.net    | 100.68.100.4    | rtr1-g5.lab.workalaya.net    | 100.68.100.5    | rtr1-g6.lab.workalaya.net    | 100.68.100.6    |
-| vm1-g4.lab.workalaya.net     | 100.68.4.21     | vm1-g5.lab.workalaya.net     | 100.68.5.21     | vm1-g6.lab.workalaya.net     | 100.68.6.21     |
-| vm2-g4.lab.workalaya.net     | 100.68.4.22     | vm2-g5.lab.workalaya.net     | 100.68.5.22     | vm2-g6.lab.workalaya.net     | 100.68.6.22     |
-| vm3-g4.lab.workalaya.net     | 100.68.4.23     | vm3-g5.lab.workalaya.net     | 100.68.5.23     | vm3-g6.lab.workalaya.net     | 100.68.6.23     |
-| srv1-g4.lab.workalaya.net    | 100.68.4.254    | srv1-g5.lab.workalaya.net    | 100.68.5.254    | srv1-g6.lab.workalaya.net    | 100.68.6.254    |
-| ansible-g4.lab.workalaya.net | 100.68.4.253    | ansible-g5.lab.workalaya.net | 100.68.5.253    | ansible-g6.lab.workalaya.net | 100.68.6.253    |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| Group 7                                        |  Group 8                                       | Group 9                                        |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| rtr1-g7.lab.workalaya.net    | 100.68.100.7    | rtr1-g8.lab.workalaya.net    | 100.68.100.8    | rtr1-g9.lab.workalaya.net    | 100.68.100.9    |
-| vm1-g7.lab.workalaya.net     | 100.68.7.21     | vm1-g8.lab.workalaya.net     | 100.68.8.21     | vm1-g9.lab.workalaya.net     | 100.68.9.21     |
-| vm2-g7.lab.workalaya.net     | 100.68.7.22     | vm2-g8.lab.workalaya.net     | 100.68.8.22     | vm2-g9.lab.workalaya.net     | 100.68.9.22     |
-| vm3-g7.lab.workalaya.net     | 100.68.7.23     | vm3-g8.lab.workalaya.net     | 100.68.8.23     | vm3-g9.lab.workalaya.net     | 100.68.9.23     |
-| srv1-g7.lab.workalaya.net    | 100.68.7.254    | srv1-g8.lab.workalaya.net    | 100.68.8.254    | srv1-g9.lab.workalaya.net    | 100.68.9.254    |
-| ansible-g7.lab.workalaya.net | 100.68.7.253    | ansible-g8.lab.workalaya.net | 100.68.8.253    | ansible-g9.lab.workalaya.net | 100.68.9.253    |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| Group 10                                       |  Group 11                                      | Group 12                                       |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-| rtr1-g10.lab.workalaya.net    | 100.611.100.10 | rtr1-g11.lab.workalaya.net    | 100.611.100.11 | rtr1-g12.lab.workalaya.net    | 100.611.100.12 |
-| vm1-g10.lab.workalaya.net     | 100.611.10.21  | vm1-g11.lab.workalaya.net     | 100.611.11.21  | vm1-g12.lab.workalaya.net     | 100.611.12.21  |
-| vm2-g10.lab.workalaya.net     | 100.611.10.22  | vm2-g11.lab.workalaya.net     | 100.611.11.22  | vm2-g12.lab.workalaya.net     | 100.611.12.22  |
-| vm3-g10.lab.workalaya.net     | 100.611.10.23  | vm3-g11.lab.workalaya.net     | 100.611.11.23  | vm3-g12.lab.workalaya.net     | 100.611.12.23  |
-| srv1-g10.lab.workalaya.net    | 100.611.10.254 | srv1-g11.lab.workalaya.net    | 100.611.11.254 | srv1-g12.lab.workalaya.net    | 100.611.12.254 |
-| ansible-g10.lab.workalaya.net | 100.611.10.253 | ansible-g11.lab.workalaya.net | 100.611.11.253 | ansible-g12.lab.workalaya.net | 100.611.12.253 |
-|------------------------------------------------|------------------------------------------------|------------------------------------------------|
-</div></code></pre>
+<table>
+<thead>
+<tr>
+<th>Group 1</th>
+<th></th>
+<th>Group 2</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g1.lab.workalaya.net</td>
+<td>100.68.100.1</td>
+<td>rtr1-g2.lab.workalaya.net</td>
+<td>100.68.100.2</td>
+</tr>
+<tr>
+<td>vm1-g1.lab.workalaya.net</td>
+<td>100.68.1.21</td>
+<td>vm1-g2.lab.workalaya.net</td>
+<td>100.68.2.21</td>
+</tr>
+<tr>
+<td>vm2-g1.lab.workalaya.net</td>
+<td>100.68.1.22</td>
+<td>vm2-g2.lab.workalaya.net</td>
+<td>100.68.2.22</td>
+</tr>
+<tr>
+<td>vm3-g1.lab.workalaya.net</td>
+<td>100.68.1.23</td>
+<td>vm3-g2.lab.workalaya.net</td>
+<td>100.68.2.23</td>
+</tr>
+<tr>
+<td>vm4-g1.lab.workalaya.net</td>
+<td>100.68.1.24</td>
+<td>vm4-g2.lab.workalaya.net</td>
+<td>100.68.2.24</td>
+</tr>
+<tr>
+<td>srv1-g1.lab.workalaya.net</td>
+<td>100.68.1.254</td>
+<td>srv1-g2.lab.workalaya.net</td>
+<td>100.68.2.254</td>
+</tr>
+<tr>
+<td>ansible-g1.lab.workalaya.net</td>
+<td>100.68.1.253</td>
+<td>ansible-g2.lab.workalaya.net</td>
+<td>100.68.2.253</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Group 3</th>
+<th></th>
+<th>Group 4</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g3.lab.workalaya.net</td>
+<td>100.68.100.3</td>
+<td>rtr1-g4.lab.workalaya.net</td>
+<td>100.68.100.4</td>
+</tr>
+<tr>
+<td>vm1-g3.lab.workalaya.net</td>
+<td>100.68.3.21</td>
+<td>vm1-g4.lab.workalaya.net</td>
+<td>100.68.4.21</td>
+</tr>
+<tr>
+<td>vm2-g3.lab.workalaya.net</td>
+<td>100.68.3.22</td>
+<td>vm2-g4.lab.workalaya.net</td>
+<td>100.68.4.22</td>
+</tr>
+<tr>
+<td>vm3-g3.lab.workalaya.net</td>
+<td>100.68.3.23</td>
+<td>vm3-g4.lab.workalaya.net</td>
+<td>100.68.4.23</td>
+</tr>
+<tr>
+<td>vm4-g3.lab.workalaya.net</td>
+<td>100.68.3.24</td>
+<td>vm4-g4.lab.workalaya.net</td>
+<td>100.68.4.24</td>
+</tr>
+<tr>
+<td>srv1-g3.lab.workalaya.net</td>
+<td>100.68.3.254</td>
+<td>srv1-g4.lab.workalaya.net</td>
+<td>100.68.4.254</td>
+</tr>
+<tr>
+<td>ansible-g3.lab.workalaya.net</td>
+<td>100.68.3.253</td>
+<td>ansible-g4.lab.workalaya.net</td>
+<td>100.68.4.253</td>
+</tr>
+</tbody>
+</table>
 <hr>
+<style scoped>
+table{
+    font-size: 50%;
+}
+</style>
+<h2 id="group-details-contd">Group Details (Contd.)</h2>
+<table>
+<thead>
+<tr>
+<th>Group 5</th>
+<th></th>
+<th>Group 6</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g5.lab.workalaya.net</td>
+<td>100.68.100.5</td>
+<td>rtr1-g6.lab.workalaya.net</td>
+<td>100.68.100.6</td>
+</tr>
+<tr>
+<td>vm1-g5.lab.workalaya.net</td>
+<td>100.68.5.21</td>
+<td>vm1-g6.lab.workalaya.net</td>
+<td>100.68.6.21</td>
+</tr>
+<tr>
+<td>vm2-g5.lab.workalaya.net</td>
+<td>100.68.5.22</td>
+<td>vm2-g6.lab.workalaya.net</td>
+<td>100.68.6.22</td>
+</tr>
+<tr>
+<td>vm3-g5.lab.workalaya.net</td>
+<td>100.68.5.23</td>
+<td>vm3-g6.lab.workalaya.net</td>
+<td>100.68.6.23</td>
+</tr>
+<tr>
+<td>vm4-g5.lab.workalaya.net</td>
+<td>100.68.5.24</td>
+<td>vm4-g6.lab.workalaya.net</td>
+<td>100.68.6.24</td>
+</tr>
+<tr>
+<td>srv1-g5.lab.workalaya.net</td>
+<td>100.68.5.254</td>
+<td>srv1-g6.lab.workalaya.net</td>
+<td>100.68.6.254</td>
+</tr>
+<tr>
+<td>ansible-g5.lab.workalaya.net</td>
+<td>100.68.5.253</td>
+<td>ansible-g6.lab.workalaya.net</td>
+<td>100.68.6.253</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Group 7</th>
+<th></th>
+<th>Group 8</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g7.lab.workalaya.net</td>
+<td>100.68.100.7</td>
+<td>rtr1-g8.lab.workalaya.net</td>
+<td>100.68.100.8</td>
+</tr>
+<tr>
+<td>vm1-g7.lab.workalaya.net</td>
+<td>100.68.7.21</td>
+<td>vm1-g8.lab.workalaya.net</td>
+<td>100.68.8.21</td>
+</tr>
+<tr>
+<td>vm2-g7.lab.workalaya.net</td>
+<td>100.68.7.22</td>
+<td>vm2-g8.lab.workalaya.net</td>
+<td>100.68.8.22</td>
+</tr>
+<tr>
+<td>vm3-g7.lab.workalaya.net</td>
+<td>100.68.7.23</td>
+<td>vm3-g8.lab.workalaya.net</td>
+<td>100.68.8.23</td>
+</tr>
+<tr>
+<td>vm4-g7.lab.workalaya.net</td>
+<td>100.68.7.24</td>
+<td>vm4-g8.lab.workalaya.net</td>
+<td>100.68.8.24</td>
+</tr>
+<tr>
+<td>srv1-g7.lab.workalaya.net</td>
+<td>100.68.7.254</td>
+<td>srv1-g8.lab.workalaya.net</td>
+<td>100.68.8.254</td>
+</tr>
+<tr>
+<td>ansible-g7.lab.workalaya.net</td>
+<td>100.68.7.253</td>
+<td>ansible-g8.lab.workalaya.net</td>
+<td>100.68.8.253</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<style scoped>
+table{
+    font-size: 48%;
+}
+</style>
+<h2 id="group-details-contd">Group Details (Contd.)</h2>
+<table>
+<thead>
+<tr>
+<th>Group 9</th>
+<th></th>
+<th>Group 10</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g9.lab.workalaya.net</td>
+<td>100.68.100.9</td>
+<td>rtr1-g10.lab.workalaya.net</td>
+<td>100.68.100.10</td>
+</tr>
+<tr>
+<td>vm1-g9.lab.workalaya.net</td>
+<td>100.68.9.21</td>
+<td>vm1-g10.lab.workalaya.net</td>
+<td>100.68.10.21</td>
+</tr>
+<tr>
+<td>vm2-g9.lab.workalaya.net</td>
+<td>100.68.9.22</td>
+<td>vm2-g10.lab.workalaya.net</td>
+<td>100.68.10.22</td>
+</tr>
+<tr>
+<td>vm3-g9.lab.workalaya.net</td>
+<td>100.68.9.23</td>
+<td>vm3-g10.lab.workalaya.net</td>
+<td>100.68.10.23</td>
+</tr>
+<tr>
+<td>vm4-g9.lab.workalaya.net</td>
+<td>100.68.9.24</td>
+<td>vm4-g10.lab.workalaya.net</td>
+<td>100.68.10.24</td>
+</tr>
+<tr>
+<td>srv1-g9.lab.workalaya.net</td>
+<td>100.68.9.254</td>
+<td>srv1-g10.lab.workalaya.net</td>
+<td>100.68.10.254</td>
+</tr>
+<tr>
+<td>ansible-g9.lab.workalaya.net</td>
+<td>100.68.9.253</td>
+<td>ansible-g10.lab.workalaya.net</td>
+<td>100.68.10.253</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Group 11</th>
+<th></th>
+<th>Group 12</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g11.lab.workalaya.net</td>
+<td>100.68.100.11</td>
+<td>rtr1-g12.lab.workalaya.net</td>
+<td>100.68.100.12</td>
+</tr>
+<tr>
+<td>vm1-g11.lab.workalaya.net</td>
+<td>100.68.11.21</td>
+<td>vm1-g12.lab.workalaya.net</td>
+<td>100.68.12.21</td>
+</tr>
+<tr>
+<td>vm2-g11.lab.workalaya.net</td>
+<td>100.68.11.22</td>
+<td>vm2-g12.lab.workalaya.net</td>
+<td>100.68.12.22</td>
+</tr>
+<tr>
+<td>vm3-g11.lab.workalaya.net</td>
+<td>100.68.11.23</td>
+<td>vm3-g12.lab.workalaya.net</td>
+<td>100.68.12.23</td>
+</tr>
+<tr>
+<td>vm4-g11.lab.workalaya.net</td>
+<td>100.68.11.24</td>
+<td>vm4-g12.lab.workalaya.net</td>
+<td>100.68.12.24</td>
+</tr>
+<tr>
+<td>srv1-g11.lab.workalaya.net</td>
+<td>100.68.11.254</td>
+<td>srv1-g12.lab.workalaya.net</td>
+<td>100.68.12.254</td>
+</tr>
+<tr>
+<td>ansible-g11.lab.workalaya.net</td>
+<td>100.68.11.253</td>
+<td>ansible-g12.lab.workalaya.net</td>
+<td>100.68.12.253</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<style scoped>
+table{
+    font-size: 48%;
+}
+</style>
+<h2 id="group-details-contd">Group Details (Contd.)</h2>
+<table>
+<thead>
+<tr>
+<th>Group 13</th>
+<th></th>
+<th>Group 14</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g13.lab.workalaya.net</td>
+<td>100.68.100.13</td>
+<td>rtr1-g14.lab.workalaya.net</td>
+<td>100.68.100.14</td>
+</tr>
+<tr>
+<td>vm1-g13.lab.workalaya.net</td>
+<td>100.68.13.21</td>
+<td>vm1-g14.lab.workalaya.net</td>
+<td>100.68.14.21</td>
+</tr>
+<tr>
+<td>vm2-g13.lab.workalaya.net</td>
+<td>100.68.13.22</td>
+<td>vm2-g14.lab.workalaya.net</td>
+<td>100.68.14.22</td>
+</tr>
+<tr>
+<td>vm3-g13.lab.workalaya.net</td>
+<td>100.68.13.23</td>
+<td>vm3-g14.lab.workalaya.net</td>
+<td>100.68.14.23</td>
+</tr>
+<tr>
+<td>vm4-g13.lab.workalaya.net</td>
+<td>100.68.13.24</td>
+<td>vm4-g14.lab.workalaya.net</td>
+<td>100.68.14.24</td>
+</tr>
+<tr>
+<td>srv1-g13.lab.workalaya.net</td>
+<td>100.68.13.254</td>
+<td>srv1-g14.lab.workalaya.net</td>
+<td>100.68.14.254</td>
+</tr>
+<tr>
+<td>ansible-g13.lab.workalaya.net</td>
+<td>100.68.13.253</td>
+<td>ansible-g14.lab.workalaya.net</td>
+<td>100.68.14.253</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Group 15</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rtr1-g15.lab.workalaya.net</td>
+<td>100.68.100.15</td>
+</tr>
+<tr>
+<td>vm1-g15.lab.workalaya.net</td>
+<td>100.68.15.21</td>
+</tr>
+<tr>
+<td>vm2-g15.lab.workalaya.net</td>
+<td>100.68.15.22</td>
+</tr>
+<tr>
+<td>vm3-g15.lab.workalaya.net</td>
+<td>100.68.15.23</td>
+</tr>
+<tr>
+<td>vm4-g15.lab.workalaya.net</td>
+<td>100.68.15.24</td>
+</tr>
+<tr>
+<td>srv1-g15.lab.workalaya.net</td>
+<td>100.68.15.254</td>
+</tr>
+<tr>
+<td>ansible-g15.lab.workalaya.net</td>
+<td>100.68.15.253</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<style scoped>
+ul{
+    font-size: 88%;
+}
+</style>
 <h2 id="fit---we-will-assign-vms-groups-now"><!--fit--> We will assign VMs &amp; Groups Now</h2>
 <ul>
 <li>1 transit routers (gw-rtr)</li>
-<li>12 border routers (rtr1-gY)</li>
-<li>60 virtual servers
+<li>15 border routers (rtr1-gY)</li>
+<li>94 virtual servers
 <ul>
+<li>2 Name Servers (ns1, ns2)</li>
+<li>1 Web Server (www)</li>
+<li>1 NOC Server (noc)</li>
 <li>1 server per user (vmX-gY)</li>
 <li>1 shared server per group (srv1-gY)</li>
 <li>1 shared ansible controller server per group (ansible-gY)</li>
 </ul>
 </li>
 </ul>
-<pre class="hljs"><code><div>1. You will work in groups of 3-6 on some exercises
+<pre class="hljs"><code><div>1. You will work in groups of 4-8 on some exercises
 2. Please choose your location for the week now
 3. You will use your group’s virtual machines all week
 </div></code></pre>
 <hr>
 <h2 id="virtual-machine-access">Virtual Machine Access</h2>
 <ul>
-<li>There are 60 Virtual Machines:
+<li>There are 90 Virtual Machines:
 <ul>
 <li><code>vmX-gY.lab.workalaya.net</code></li>
 <li><code>srv1-gY.lab.workalaya.net</code></li>
@@ -714,7 +1126,7 @@ ansible-g1.lab.workalaya.net: <span class="hljs-number">100.68</span><span class
 <li>Ansible Controller VM has different set of users:
 <ul>
 <li>General users: <em><code>vmX-gY</code></em></li>
-<li>eg: if participant is assigned <code>vm1-g1.lab.workalaya.net</code> then his/her login to ansilbe vm will be <code>vm1-g1</code></li>
+<li>eg: if participant is assigned <code>vm1-g1.lab.workalaya.net</code> then his/her login to ansible vm will be <code>vm1-g1</code></li>
 <li>Password will be same as <em><code>lab</code></em> user</li>
 </ul>
 </li>
@@ -722,7 +1134,7 @@ ansible-g1.lab.workalaya.net: <span class="hljs-number">100.68</span><span class
 <hr>
 <h2 id="router-access">Router Access</h2>
 <ul>
-<li>There are 12 routers:
+<li>There are 15 routers:
 <ul>
 <li><code>rtr1-gY.lab.workalaya.net</code></li>
 </ul>
