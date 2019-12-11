@@ -568,8 +568,7 @@ lab@vmX-gY:~$ nfdump -r /tmp/nfcap-test/nfcapd.201Ywwxxyyzz -s srcip/bytes
 <span class="hljs-attr">  vars:</span>
 <span class="hljs-attr">    nfsen_sources:</span>
 <span class="hljs-bullet">      -</span> <span class="hljs-string">"'rtr-g<span class="hljs-template-variable">{{ class_group }}</span>' =&gt; {'port'=&gt;'9996','col'=&gt;'#0000ff','type'=&gt;'netflow'},"</span>
-<span class="hljs-attr">    nfsen_bufflen:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-number">20000</span>
+<span class="hljs-attr">    nfsen_bufflen:</span> <span class="hljs-number">20000</span>
 <span class="hljs-attr">  tasks:</span>
 <span class="hljs-attr">    - name:</span> <span class="hljs-string">ensure</span> <span class="hljs-string">package</span> <span class="hljs-string">cache</span> <span class="hljs-string">is</span> <span class="hljs-string">up</span> <span class="hljs-string">to</span> <span class="hljs-string">date</span>
 <span class="hljs-attr">      apt:</span>
